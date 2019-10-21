@@ -6,8 +6,13 @@ module arrays_section_module
     real(kind=4), allocatable :: elevTable(:),areaTable(:)
     real(kind=4), allocatable :: pereTable(:),rediTable(:)
     real(kind=4), allocatable :: convTable(:),topwTable(:)
-    real(kind=4), allocatable :: nwi1Table(:),elevTable_1(:),topwTable_1(:),areaTable_1(:),dPdATable(:)
-    real(kind=4), allocatable :: eleNewSection(:),eleNewSection_1(:),topWNewSection(:),topWNewSection_1(:)
+    real(kind=4), allocatable :: nwi1Table(:),upstreamEleTable(:),upstreamTopwTable(:),dPdATable(:)
+    real(kind=4), allocatable :: eleNewSection(:),eleNewSectionUpstream(:),topWNewSection(:),topWNewSection_upstream(:)
+    real(kind=4), allocatable :: eleNewSectionDownstream(:),topWNewSection_downstream(:)
+    real(kind=4), allocatable :: downstreamEleTable(:),downstreamTopwTable(:),downstreamAreaTable(:)
+
+    real(kind=4), allocatable :: elevtable_1(:),topwTable_1(:),areaTable_1(:)
+    real(kind=4), allocatable :: topWNewSection_1(:),eleNewSection_1(:)
 
     integer :: maxTableLength, nel
 
@@ -28,14 +33,25 @@ contains
         allocate(topwTable(maxTableLength))
         allocate(nwi1Table(maxTableLength))
         allocate(dPdATable(maxTableLength))
-        allocate(elevTable_1(maxTableLength))
-        allocate(topwTable_1(maxTableLength))
-        allocate(areaTable_1(maxTableLength))
+        allocate(upstreamEleTable(maxTableLength))
+        allocate(upstreamTopwTable(maxTableLength))
 
         allocate(eleNewSection(nel))
-        allocate(eleNewSection_1(nel))
+        allocate(eleNewSectionUpstream(nel))
         allocate(topWNewSection(nel))
+        allocate(topWNewSection_upstream(nel))
+
+        allocate(eleNewSectionDownstream(nel))
+        allocate(topWNewSection_downstream(nel))
+        allocate(downstreamEleTable(nel))
+        allocate(downstreamTopwTable(nel))
+        allocate(downstreamAreaTable(nel))
+
+        allocate(elevtable_1(nel))
+        allocate(topwTable_1(nel))
+        allocate(areaTable_1(nel))
         allocate(topWNewSection_1(nel))
+        allocate(eleNewSection_1(nel))
 
     end subroutine setup_arrays_section
 end module
