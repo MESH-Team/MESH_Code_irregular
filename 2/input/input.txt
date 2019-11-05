@@ -1,0 +1,34 @@
+2.0 =: dtini         Time step dt
+20.0 =: dxini         Spatial step dx
+50000 =: tfin          Final time
+51 =: ncomp         number of nodes
+15000 =: ntim          number of timesteps
+0.0 =: phi           source term treatment (0:explicit, 1:implicit)
+1.0 =: theta         ?
+0.0 =: thetas        ?
+0.0 =: thesinv       ?
+0.5 =: alfa2         emp parameter for artificial diffusion (lit)
+0.1 =: alfa4         maximum value for artificial diffusion
+1.0 =: f             SI Units = 1
+66.667 =: skk           1/Manning's n roughness
+2.5 =: yy            water surface elevation (m)
+20 =: qq            uniform flow condition (m3s-1)
+1.0 =: cfl           courant number for optimal optimization of dt
+0 =: ots           optimize dt (1:apply opt, !=1:user specify)
+0.0 =: yw            weir height
+0.0 =: bw            weir width
+1.1 =: w             weir coefficient (unused)
+1 =: option        DS imposed condition (1:y, 2:q, 3:rating curve)
+0.1 =: yn            water level of DS end
+0.0085 =: qn            water discharge of DS end
+700 =: igate         spatial index of gate location (unused)
+..\2\CS\Test2_ =: xSection_path
+..\2\input\bed_elevation.txt =: bed_elevation_path
+..\2\input\upstream_hydrograph.txt =: upstream_path
+..\2\input\downstream_hydrograph.txt =: downstream_path
+..\2\input\channel_width.txt =: channel_width_path
+..\2\input\dx.txt	=:	dx_path
+..\2\output\ =: output_path
+0 =: option_dsbc         2 is drawdown to critical, 1 is normal, and 0 is constant water level downstream
+500 =: maxTableLength         maximum number of data in each cross section file
+101 =: nel         number of line in each cross section attribute table
