@@ -38,7 +38,7 @@ program mesh
     !character(len=128) :: output_area
     character(len=128) :: dx_path  !, output_q, output_wl
 
-    open(unit=1,file="../3/input/input.txt",status='unknown')
+    open(unit=1,file="../Sim2/input/input.txt",status='unknown')
 
     ! read data
     read(1,*) dtini
@@ -102,7 +102,7 @@ program mesh
         !print*, 'z=',z(i),'y(1,i)=',y(1,i)
         !pause 1
     end do
-
+pause 100
     ityp = 1
 
     ! setting initial condition
@@ -201,13 +201,18 @@ program mesh
             dqc(ncomp)=dqp(ncomp)
 
         else
-            dac(ncomp)=0.0
-            dap(ncomp)=0.0
-            dqc(ncomp)=dqp(ncomp)
+            !dac(ncomp)=0.0
+            !dap(ncomp)=0.0
+            !dqc(ncomp)=dqp(ncomp)
+
+            dap(ncomp)=0.0	!checked email !for critical comment out
+            dac(ncomp)=dap(ncomp)	!checked email
+            dqc(ncomp)=dqp(ncomp)	!checked email
 
         endif
 
-
+        !print*, 'dap=',(dap(i), i=1, ncomp)
+        !print*, 'dqp=',(dqp(i), i=1, ncomp)
         ! Update via predictor
         areap = area + dap
         qp = q(n, :) + dqp
@@ -231,7 +236,10 @@ program mesh
         ! Upstream boundary condition
         ! Prescribed discharge at the upstream
         ! Area correction is calculated
-        dqc(1)=dqp(1)
+
+        dqc(1)=dqp(1)	!checked email
+        !dac(1)=dap(1) !for critical, uncomment
+        dap(1)=dac(1)	!checked email
 
         ! Final update
         do i=1,ncomp
@@ -269,8 +277,11 @@ program mesh
 
         t = t + dtini
         print "('- cycle',i6,'  terminated')", n
+
+        if (mod(n,50) .eq. 0) then
         write(8, *) t, (y(n+1, i), i=1,ncomp)
         write(9, *) t, (q(n+1, i), i=1,ncomp)
+        end if
     end do
     ! End of time loop
 
