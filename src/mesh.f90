@@ -38,7 +38,7 @@ program mesh
     !character(len=128) :: output_area
     character(len=128) :: dx_path  !, output_q, output_wl
 
-    open(unit=1,file="../Sim2/input/input.txt",status='unknown')
+    open(unit=1,file="../1/input/input.txt",status='unknown')
 
     ! read data
     read(1,*) dtini
