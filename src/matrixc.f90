@@ -49,7 +49,7 @@ subroutine matrixc()
         ter=pere(i)
         !Nazmul: dkda is corrected according to October 1, 2019 meeting at NWC
         dkda=sk(i)*((5.0/3.0*areap(i)**(2.0/3.0)*ter)     &
-                   -(2.0/3.0*areap(i)**(5.0/3.0)**dpda(i)))/(ter**(5.0/3.0))
+                   -(2.0/3.0*areap(i)**(5.0/3.0)*dpda(i)))/(ter**(5.0/3.0))
 
         ! Matrix S (eq 14)
         st(1, 1)=0.0
