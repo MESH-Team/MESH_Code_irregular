@@ -23,7 +23,7 @@ subroutine secpred()
         print*, 'secpred, i=', i
 !        Nazmul: areap(i) is used through the section attribute table to get d(i)
 ! ----------------------------------------------------
-        write(file_num,'(i3.3)')i
+        write(file_num,'(i4.4)')i
 
         open(unit=19,file=trim(xSection_path)//file_num//'_tab')
 
@@ -73,7 +73,7 @@ subroutine secpred()
 
       !pause 14
 
-      write(file_num_1,'(i3.3)')i+1
+      write(file_num_1,'(i4.4)')i+1
       xSection_tab_1=trim(xSection_path)//file_num_1//'_tab'
 
       open(unit=21,file=xSection_tab_1)

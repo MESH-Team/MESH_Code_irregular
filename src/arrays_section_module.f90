@@ -16,7 +16,7 @@ module arrays_section_module
 
     integer :: maxTableLength, nel
 
-    character*3 :: file_num, file_num_1
+    character*4 :: file_num, file_num_1
     character(len=128) :: xSection_path, xSection_tab, xSection_tab_1
 
 contains

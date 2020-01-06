@@ -250,7 +250,7 @@ pause 100
 
 !       Nazmul: Now calculate y based on area calculated
 !-------------------------------------
-            write(file_num,'(i3.3)')i
+            write(file_num,'(i4.4)')i
 
             open(unit=29,file=trim(xSection_path)//file_num//'_tab')
 

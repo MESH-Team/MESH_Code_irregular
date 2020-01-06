@@ -23,7 +23,7 @@ subroutine section(n)
 
 !      Nazmul change: read all attributes from tab file
 
-        write(file_num,'(i3.3)')i
+        write(file_num,'(i4.4)')i
 
         open(unit=19,file=trim(xSection_path)//file_num//'_tab')
 
@@ -69,7 +69,7 @@ subroutine section(n)
       increm=(yyn-minZ)/(nel-1.0)
       increm_1=(yyn_1-minZ_1)/(nel-1.0)
 
-      write(file_num_1,'(i3.3)')i-1
+      write(file_num_1,'(i4.4)')i-1
       xSection_tab_1=trim(xSection_path)//file_num_1//'_tab'
 
       open(unit=22,file=xSection_tab_1)

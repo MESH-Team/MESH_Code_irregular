@@ -21,7 +21,7 @@ subroutine readXsection(k,rmanning)
     real el_min, el_max, el_range, el_incr, el_now, x1, y1, x2, y2, x_start, x_end, waterElev
     real f2m, cal_area, cal_peri, cal_topW, cal_dist, cal_tri_area, cal_multi_area, cal_perimeter, diffAreaCenter
     integer i1, i2
-    !character*3 file_num
+    !character*4 file_num
 
     ! Assign some parameters
     ! f2m is conversion if the data is in feet
@@ -45,7 +45,7 @@ subroutine readXsection(k,rmanning)
 !     Open data file
 
 !      do k=1,541
-    write(file_num,'(i3.3)')k
+    write(file_num,'(i4.4)')k
 !        print*, file_num
 !      print*, 'Here ',trim(xSection_path),'here'
         open(11,file=trim(xSection_path)//file_num)
