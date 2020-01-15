@@ -14,6 +14,12 @@ module arrays_section_module
     real(kind=4), allocatable :: elevtable_1(:),topwTable_1(:),areaTable_1(:)
     real(kind=4), allocatable :: topWNewSection_1(:),eleNewSection_1(:)
 
+! only in version 2 20191511
+    real(kind=4), allocatable :: I2Tablep(:),I2Tablec(:)
+    real(kind=4), allocatable :: upstreamI2Tablec(:), downstreamI2Tablep(:)
+    real(kind=4), allocatable :: dbdxTablep(:), dbdxTablec(:)
+    real(kind=4), allocatable :: currentSquareDepth(:), downstreamSquareDepth(:), upstreamSquareDepth(:)
+
     integer :: maxTableLength, nel
 
     character*4 :: file_num, file_num_1
@@ -52,6 +58,17 @@ contains
         allocate(areaTable_1(nel))
         allocate(topWNewSection_1(nel))
         allocate(eleNewSection_1(nel))
+
+! only in version 2 20151115
+        allocate(I2Tablep(nel))
+        allocate(I2Tablec(nel))
+        allocate(upstreamI2Tablec(nel))
+        allocate(downstreamI2Tablep(nel))
+        allocate(dbdxTablep(nel))
+        allocate(dbdxTablec(nel))
+        allocate(currentSquareDepth(nel))
+        allocate(downstreamSquareDepth(nel))
+        allocate(upstreamSquareDepth(nel))
 
     end subroutine setup_arrays_section
 end module

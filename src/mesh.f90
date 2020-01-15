@@ -2,7 +2,6 @@
 !
 !  A program for one dimensional flow in open channel
 !
-
 program mesh
 
     use constants_module
@@ -11,34 +10,25 @@ program mesh
     use var_module
     use matrix_module
     use sgate_module
+    use xsec_attribute_module
 
     implicit none
 
     ! Local storage
-    integer :: i, n, ntim, igate, igatmaxTableLengthe, pp, jj
+    integer(kind=4) :: i, n, ntim, igate, pp, boundaryFileMaxEntry, Q_sk_tableEntry, ppp, qqq
     real(kind=4) :: areanew, cour, da, dq, dxini, yy, x, thetas, thesinv, tfin
     real(kind=4) :: t, skk, qq, qn, xt, r_interpol
-    real(kind=4) :: arean, areac, hyrdn, hyrdc, perimn, perimc, qcrit, s0ds
+    real(kind=4) :: arean, areac, hyrdn, hyrdc, perimn, perimc, qcrit, s0ds, timesDepth
 
-    character(len=128) :: input_path, upstream_path , downstream_path
-    character(len=128) :: bed_elevation_path, output_path
+    character(len=128) :: upstream_path , downstream_path
+    character(len=128) :: bed_elevation_path, output_path, other_input
     character(len=128) :: channel_width_path
     character(len=128) :: path
 
     ! open file for input data
+    character(len=128) :: dx_path
 
-    !if (command_argument_count() > 0) then
-    !    call get_command_argument(1, input_path)
-    !    input_path = trim(input_path)
-    !else
-       ! input_path =arrays_module
-    !end if
-    ! new from Nazmul
-    !character(len=128) :: all_path
-    !character(len=128) :: output_area
-    character(len=128) :: dx_path  !, output_q, output_wl
-
-    open(unit=1,file="../1/input/input.txt",status='unknown')
+    open(unit=1,file="../lower_Mississippi/input/input.txt",status='unknown')
 
     ! read data
     read(1,*) dtini
@@ -64,7 +54,7 @@ program mesh
     read(1,*) option
     read(1,*) yn
     read(1,*) qn
-    read(1,*) igatmaxTableLengthe
+    read(1,*) igate
     read(1,*) xSection_path
     read(1,*) bed_elevation_path
     read(1,*) upstream_path
@@ -75,80 +65,118 @@ program mesh
     read(1,*) option_dsbc
     read(1,*) maxTableLength
     read(1,*) nel
+    read(1,*) timesDepth
+    read(1,*) other_input
+    read(1,*) Q_sk_tableEntry
+    read(1,*) boundaryFileMaxEntry
     close (1)
 
     ! Allocate arrays
-    call setup_arrays(ntim, ncomp)
-    ! added Nazmul
-    ! Allocate arrays
+    call setup_arrays(ntim, ncomp, Q_sk_tableEntry, boundaryFileMaxEntry)
     call setup_arrays_section
+    call setup_xsec_attribute_module(nel, ncomp)
 
     dt = dtini
 
     open(unit=90, file=trim(dx_path))
     do i=1,ncomp-1
         read(90, *) x, dx(i)
-        !print*, x, dx(i)
-        !pause 1
     end do
     close(90)
-    !dx = dxini
-    !	new addition Nazmul
+
+    ! reading Strickler's coefficient at each section
+    open(unit=85,file=trim(other_input)//'Mannings_Stricklers_coeff.txt', status='unknown')
     do i=1,ncomp
-        call readXsection(i,(1.0/skk))
-        ! Nazmul: This subroutine creates attribute table for each cross sections and saves in the hdd
+        read(85, *) x, sk(i)
+        call readXsection(i,(1.0/sk(i)),timesDepth)
+        ! This subroutine creates attribute table for each cross sections and saves in the hdd
         ! setting initial condition
-        y(1,i) = z(i) + yy
-        !print*, 'z=',z(i),'y(1,i)=',y(1,i)
-        !pause 1
+        y(1,i) = yy ! + z(i)
     end do
-pause 100
+    close(85)
+
+    do i=1,ncomp
+        call create_I2(i,ncomp)
+    end do
+
     ityp = 1
 
     ! setting initial condition
+    ! setting initial condition from previous work
+    !open(unit=91,file=trim(output_path)//'initialCondition.txt', status='unknown')
+    ! read(91, *)
+    !do i=1,ncomp
+    !    read(91, *) q(1, i), y(1, i)
+    !end do
+    !close(91)
+
     q(1, :) = qq
-    sk = skk
+
+
+    ! reading Q-Strickler's coefficient multiplier table
+    open(unit=86,file=trim(other_input)//'Q_Mannings_table.txt', status='unknown')
+    do i=1,maxTableLength
+        read(86,*,end=300)Q_Sk_Table(1,i), Q_Sk_Table(2,i)
+    enddo
+300 close(86)
+
+
     x = 0.0
 
     ! Read hydrograph input Upstream
-    open(unit=98, file=upstream_path)
-    do n=1,ntim
-      read(98,*) t, q(n, 1)
+    open(unit=87, file=upstream_path)
+    do n=1,boundaryFileMaxEntry
+        read(87,*,end=301) USBoundary(1, n), USBoundary(2, n)
     end do
-    close(98)
-    ! Read hydrograph input downstream
-    open(unit=99, file=downstream_path)
-    do n=1,ntim
-      read(99,*) t, y(n, ncomp)
+301 close(87)
+    ppp = n-1
+
+    ! Read hydrograph input Downstream
+    open(unit=88, file=downstream_path)
+    do n=1,boundaryFileMaxEntry
+      read(88,*,end=302)  DSBoundary(1, n), DSBoundary(2, n)
     end do
-    close(99)
+302 close(88)
+    qqq = n-1
 
-    ! Read hydrograph input
-    ! Nazmul: for irregular channel, bo = topwidth. It changes
-    ! at every time step. Should be defined inside section(n)
+    t = 28857600.0
 
-    !open(unit=100, file=channel_width_path)
-    !open(unit=100, file="./channel_width.txt")
-    !do i=1, ncomp
-    ! read(100,*) x, bo(i)
-    !end do
-    !close(100)
+    ! applying boundary
+    ! interpolation of boundaries at the desired time steps
+    do n=1,ntim
+      q(n, 1)=r_interpol(USBoundary(1, :),USBoundary(2, :),ppp,t+(n-1)*dtini)
+      y(n, ncomp) = r_interpol(DSBoundary(1, :),DSBoundary(2, :),qqq,t+(n-1)*dtini)
+    end do
 
+! DS Boundary treatment: from water level to area time series
+    do pp=1,nel
+	  elevTable(pp) = xsec_tab(1,pp,ncomp)
+	  areaTable(pp) = xsec_tab(2,pp,ncomp)
+	enddo
+
+	open(unit=81,file=trim(output_path)//'DS_area.txt', status='unknown')
+	do n=1,ntim
+		xt=y(n, ncomp)
+		DSarea(n)=r_interpol(elevTable,areaTable,nel,xt)
+		write(81, *) n, DSarea(n)
+	enddo
+	close(81)
 
     ! Open files for output
-    !output_path="../output/"
-    !path = trim(output_path) // 'area.txt'
     path = trim(output_path) // 'output_wl.txt'
     open(unit=8, file=trim(path), status='unknown')
     path = trim(output_path) // 'q.txt'
     open(unit=9, file=trim(path), status='unknown')
 
+    path = trim(output_path) // 'area.txt'
+    open(unit=51, file=trim(path), status='unknown')
+
     ! Output initial condition
-    t = 0.0
-    !write(8, *) t, ((y(1, i) - z(i)) * bo(i), i=1,ncomp)
-    write(8, *) t, (y(1, i), i=1,ncomp)
-    !print*, t, (y(1, i), i=1,ncomp)
-    write(9, *) t, (q(1, i), i=1, ncomp)
+
+    write(8, 10) t, (y(1, i), i=1,ncomp)
+    write(9, 10) t, (q(1, i), i=1, ncomp)
+    areaSave = 0
+    write(51, 10) t, (areaSave(i), i=1, ncomp)
 
     !
     ! Loop on time
@@ -205,14 +233,14 @@ pause 100
             !dap(ncomp)=0.0
             !dqc(ncomp)=dqp(ncomp)
 
-            dap(ncomp)=0.0	!checked email !for critical comment out
+!            dap(ncomp)=0.0	!checked email !for critical comment out
+! change for unsteady flow
+			dap(ncomp) = DSarea(n+1) - DSarea(n)
             dac(ncomp)=dap(ncomp)	!checked email
             dqc(ncomp)=dqp(ncomp)	!checked email
 
         endif
 
-        !print*, 'dap=',(dap(i), i=1, ncomp)
-        !print*, 'dqp=',(dqp(i), i=1, ncomp)
         ! Update via predictor
         areap = area + dap
         qp = q(n, :) + dqp
@@ -232,7 +260,6 @@ pause 100
             dac(i)=g11inv(i)*rhs1+g12inv(i)*rhs2-c11*dac(i+1)-c12*dqc(i+1)
             dqc(i)=g21inv(i)*rhs1+g22inv(i)*rhs2-c21*dac(i+1)-c22*dqc(i+1)
         end do
-
         ! Upstream boundary condition
         ! Prescribed discharge at the upstream
         ! Area correction is calculated
@@ -246,46 +273,60 @@ pause 100
             da=(dap(i)+dac(i))/2.0
             dq=(dqp(i)+dqc(i))/2.0
             areanew=da+area(i)
-            if(areanew <= 0.0) areanew=0.0001
+            if(areanew <= 0.0) areanew=0.001
 
-!       Nazmul: Now calculate y based on area calculated
+!       Now calculate y based on area calculated
 !-------------------------------------
-            write(file_num,'(i4.4)')i
+            !write(file_num,'(i4.4)')i
 
-            open(unit=29,file=trim(xSection_path)//file_num//'_tab')
+            !open(unit=29,file=trim(xSection_path)//file_num//'_tab')
 
-            read(29,*)
+            !read(29,*)
 
-            do pp=1,maxTableLength
-                read(29,*,end=300) elevTable(pp),areaTable(pp)
-
+            do pp=1,nel
+                elevTable(pp) = xsec_tab(1,pp,i)
+                areaTable(pp) = xsec_tab(2,pp,i)
             enddo
-300         close(29)
-
-            jj=pp-1
+            !close(29)
 
     !       interpolate the cross section attributes based on FINAL CALCULATED area
             xt=areanew
-
-            y(n+1,i)=r_interpol(areaTable,elevTable,jj,xt)
-
+            areaSave(i)=areanew
+            y(n+1,i)=r_interpol(areaTable,elevTable,nel,xt)
 !-------------------------------------
-!        y(n+1,i)=areanew/bo(i)+z(i)
 
             q(n+1,i)=q(n,i)+dq
+            froud(i)=abs(q(n+1,i))/sqrt(grav*areanew**3.0/bo(i))
+
         end do
 
         t = t + dtini
         print "('- cycle',i6,'  terminated')", n
 
-        if (mod(n,50) .eq. 0) then
-        write(8, *) t, (y(n+1, i), i=1,ncomp)
-        write(9, *) t, (q(n+1, i), i=1,ncomp)
+        if (mod(n,60) .eq. 0) then
+        write(8, 10) t, (y(n+1, i), i=1,ncomp)
+        write(9, 10) t, (q(n+1, i), i=1,ncomp)
+        write(51, 10) t, (areaSave(i), i=1, ncomp)
         end if
+        ! re-read some info
+        !open(unit=1,file="../lower_Mississippi/input/input4.txt",status='unknown')
+        !read(1,*) dtini
+        !close (1)
+
     end do
     ! End of time loop
 
     close(8)
     close(9)
+    close(51)
+
+    print*, 'dx', (dx(i), i=1, ncomp-1)
+    print*, 'Froude', (froud(i), i=1, ncomp)
+    print*, 'Bed', (z(i), i=1, ncomp)
+    print*, 'areaSave', (areaSave(i), i=1, ncomp)
+    print*, 'I2_corr', (ci2(i), i=1, ncomp)
+
+    ! pause 202
+10  format(f12.2 , <ncomp>f12.2)
 
 end program mesh

@@ -145,5 +145,6 @@ subroutine matrixc()
         endif
         ! print *, 'corr',i,d1(i),d2(i),eps2(i),area(i+1),area(i)
     end do
+    !print*, 'eps2_corr', (eps2(i), i=1, ncomp)
 
 end subroutine matrixc

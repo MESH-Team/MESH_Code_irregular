@@ -1,19 +1,15 @@
-subroutine readXsection(k,rmanning)
+subroutine readXsection(k,rmanning,timesDepth)
 
     use constants_module
     use arrays_module
     use arrays_section_module
+    use xsec_attribute_module
 
     implicit none
     save
 
-!    use constants_module
-!    use arrays_module
-!    use var_module
-!    use matrix_module
-!    use sgate_module
     integer, intent(in) :: k
-    real, intent(in) :: rmanning
+    real, intent(in) :: rmanning, timesDepth
 
     real xcs(maxTableLength), ycs(maxTableLength), el1(nel),a1(nel),peri1(nel),redi1(nel)
     real conv1(nel), tpW1(nel), diffArea(nel), newI1(nel), deffPere(nel), newdPdA(nel)
@@ -28,26 +24,10 @@ subroutine readXsection(k,rmanning)
     ! Nazmul: At one point, it needs to be moved to a module
     f2m=1.0
 
-    !allocate(xcs(maxTableLength))
-    !allocate(ycs(maxTableLength))
-
-    !allocate(el1(nel))
-    !allocate(a1(nel))
-    !allocate(peri1(nel))
-    !allocate(redi1(nel))
-    !allocate(conv1(nel))
-    !allocate(tpW1(nel))
-    !allocate(diffArea(nel))
-    !allocate(newI1(nel))
-    !allocate(deffPere(nel))
-    !allocate(newdPdA(nel))
-
 !     Open data file
 
-!      do k=1,541
     write(file_num,'(i4.4)')k
-!        print*, file_num
-!      print*, 'Here ',trim(xSection_path),'here'
+        print*, file_num
         open(11,file=trim(xSection_path)//file_num)
 !     Skip headings
 
@@ -56,8 +36,8 @@ subroutine readXsection(k,rmanning)
 !     Get CS data
       do i=2,maxTableLength
           read(11,*,end=300)x1,y1
-          xcs(i)=x1
-          ycs(i)=y1
+          xcs(i)=x1*f2m
+          ycs(i)=y1*f2m
       enddo
 300   close(11)
       num=i
@@ -69,7 +49,7 @@ subroutine readXsection(k,rmanning)
           if(ycs(i).lt.el_min)el_min=ycs(i)
           if(ycs(i).gt.el_max)el_max=ycs(i)
       enddo
-      el_range=(el_max-el_min)*2.
+      el_range=(el_max-el_min)*timesDepth
       el_incr=el_range/real(nel-1.0)
 
       xcs(1)=xcs(2)
@@ -80,7 +60,7 @@ subroutine readXsection(k,rmanning)
 !     output cs data
       open(11,file=trim(xSection_path)//file_num//'.dat')
       do i=1,num
-          write(11,*)xcs(i),ycs(i)
+          write(11,*)xcs(i),ycs(i) !changing all into m unit
       enddo
       close(11)
 
@@ -91,21 +71,26 @@ subroutine readXsection(k,rmanning)
       open(22,file=trim(xSection_path)//file_num//'_tab')
       write(22,'(120a)')' Elev(m)    Area(m2)     Peri(m)      Radi(m)   Conv(m3/s)    topWidth(m)    newI1(m3)    dPdA(1/m)'  ! Hu changed
 
-      el1(1)=el_min*f2m
-      a1(1) =0
-      peri1(1)=0
-      redi1(1)=0
-      conv1(1)=0
-      tpW1(1)=0
-      newI1(1)=0
-      newdPdA(1)=0
-      write(22,10)el1(1),a1(1),peri1(1),redi1(1),conv1(1),    &
-                   tpW1(1),newI1(1),newdPdA(1)
-10    format(f9.2,3f12.2,2f20.3,2f16.2)
+!      el1(1)=el_min
+!      a1(1) =0
+!      peri1(1)=0
+!      redi1(1)=0
+!      conv1(1)=0
+!      tpW1(1)=0
+!      newI1(1)=0
+!      newdPdA(1)=0
+!      write(22,10)el1(1),a1(1),peri1(1),redi1(1),conv1(1),    &
+!                   tpW1(1),newI1(1),newdPdA(1)
+!10    format(f9.2,3f12.2,2f20.3,2f16.2)
 
 
-      do j=2,nel
+      do j=1,nel
           el_now=el_min+real(j-1)*el_incr
+
+          if(abs(el_now - el_min) < TOLERANCE) then
+            el_now=el_now+0.00001
+          end if
+
           i_start(1)=-999
           i_end(1)=-999
           i_area=0
@@ -122,14 +107,8 @@ subroutine readXsection(k,rmanning)
               i_find=0
               i_end(i_area)=i
           endif
-!              if(el_now.eq.y2 .and. i_find.eq.1)then
-!                  i_end(i_area)=i
-!                  i_area=i_area+1
-!                  i_start(i_area)=i+1
-!              endif
         enddo
-! output lines
-!        print*, 'j=',j,'i_area=',i_area
+
         cal_area=0.
         cal_peri=0.
         cal_topW=0.
@@ -159,7 +138,7 @@ subroutine readXsection(k,rmanning)
             endif
 
             cal_topW=x_end-x_start+cal_topW
-!            print*,'cal_topW=',x_end,x_start,cal_topW
+
             write(11,*)x_end,el_now
             write(11,*)'NaN NaN'
 
@@ -181,41 +160,51 @@ subroutine readXsection(k,rmanning)
 
         end do
 
-        el1(j)=el_now*f2m
-        a1(j)=cal_area*f2m*f2m
-        peri1(j)=cal_peri*f2m
+        el1(j)=el_now
+        a1(j)=cal_area
+        peri1(j)=cal_peri
         redi1(j)=a1(j)/peri1(j)
         conv1(j)=1./rmanning*a1(j)*(redi1(j))**(2./3.)
-        tpW1(j)=cal_topW*f2m
+        tpW1(j)=cal_topW
 
-        !if(j.eq.1) then
-          !diffArea(j)=a1(j)
-          !deffPere(j)=peri1(j)
-        !else
+        if(j.eq.1) then
+          diffArea(j)=a1(j)
+          deffPere(j)=peri1(j)
+        else
           diffArea(j)=a1(j)-a1(j-1)
           deffPere(j)=peri1(j)-peri1(j-1)
-        !endif
+        endif
+
         newdPdA(j)=deffPere(j)/diffArea(j)
-!        print*,'diffArea',j,diffArea(j)
+
         waterElev=el1(j)
-!        newI1=0.0
+
         do jj=2,j
           diffAreaCenter=el1(jj)-el_incr*0.5
           newI1(j)=newI1(j)+diffArea(jj)*(waterElev-diffAreaCenter)
-!          print*,'diffAreaNe',j,diffArea(jj)
+
         enddo
-!        print*,'here',jj-1,j,waterElev,el1(j),diffAreaCenter,
-!     *        diffArea(jj-1),newI1(j)
+
         write(22,10)el1(j),a1(j),peri1(j),redi1(j),conv1(j),    &
                    tpW1(j),newI1(j),newdPdA(j)
-!10      format(f9.2,3f12.2,2f20.3,2f16.2)
+10      format(f9.2,3f12.2,2f20.3,2f16.3)
 
+
+        ! new change 20200107 to make the model faster
+        xsec_tab(1,j,k) = el1(j)
+        xsec_tab(2,j,k) = a1(j)
+        xsec_tab(3,j,k) = peri1(j)
+        xsec_tab(4,j,k) = redi1(j)
+        xsec_tab(5,j,k) = conv1(j)
+        xsec_tab(6,j,k) = tpW1(j)
+        xsec_tab(7,j,k) = newI1(j)
+        xsec_tab(8,j,k) = newdPdA(j)
       end do
 
       close(11)
       close(22)
 
-      z(k)= el_min*f2m
+      z(k)= el_min
 end subroutine
 
 

@@ -12,9 +12,11 @@ module arrays_module
     real(kind=4), allocatable :: b11(:), b12(:), b21(:), b22(:)
     real(kind=4), allocatable :: eps2(:), eps4(:), d1(:), d2(:), u(:), c(:)
     real(kind=4), allocatable :: sk(:), co(:), gso(:), dbdx(:)
-    real(kind=4), allocatable :: dt(:), dx(:)
+    real(kind=4), allocatable :: dt(:), dx(:), froud(:), areaSave(:)
 
-    real(kind=4), allocatable :: pere(:),dpda(:)
+    real(kind=4), allocatable :: USBoundary(:,:), DSBoundary(:,:), Q_Sk_Table(:,:)
+! change for unsteady flow
+    real(kind=4), allocatable :: DSarea(:),pere(:),dpda(:)
 
     integer, allocatable :: ityp(:)
 
@@ -22,16 +24,20 @@ contains
 
     ! Allocate storage for all of the arrays in this module based on the number
     ! of time steps and spatial points
-    subroutine setup_arrays(num_time, num_points)
+    subroutine setup_arrays(num_time, num_points, maxTableEntry1, maxTableEntry2)
 
         implicit none
 
         ! Input
-        integer, intent(in) :: num_time, num_points
+        integer, intent(in) :: num_time, num_points, maxTableEntry1, maxTableEntry2
 
         allocate(area(num_points))
         allocate(y(num_time, num_points))
         allocate(q(num_time, num_points))
+
+! change for unsteady flow
+        allocate(DSarea(num_time))
+
         allocate(bo(num_points))
 
         allocate(pere(num_points))
@@ -76,6 +82,14 @@ contains
         allocate(dt(num_points))
         allocate(ityp(num_points))
         allocate(dx(num_points-1))
+
+        allocate(froud(num_points))
+
+        allocate(areaSave(num_points))
+
+        allocate(Q_Sk_Table(2, maxTableEntry1))
+        allocate(USBoundary(2, maxTableEntry2))
+        allocate(DSBoundary(2, maxTableEntry2))
 
 
     end subroutine setup_arrays
