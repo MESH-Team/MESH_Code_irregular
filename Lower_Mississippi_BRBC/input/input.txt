@@ -1,8 +1,8 @@
-600 =: dtini         Time step dt
+30 =: dtini         Time step dt
 20.0 =: dxini         Spatial step dx
 1844.0 =: tfin          Final time
 722 =: ncomp         number of nodes
-800 =: ntim          number of timesteps
+1036771 =: ntim          number of timesteps !1036771
 1.0 =: phi           source term treatment (0:explicit, 1:implicit)
 1.0 =: theta         ?
 1.0 =: thetas        ?
@@ -11,8 +11,8 @@
 0.0 =: alfa4         maximum value for artificial diffusion
 1.0 =: f             SI Units = 1
 40 =: skk           1/Manning's n roughness
-3.0 =: yy            water surface elevation (m)
-30000.00 =: qq            uniform flow condition (m3s-1)
+1.321 =: yy            water surface elevation (m)
+13883.345 =: qq            uniform flow condition (m3s-1)
 1.0 =: cfl           courant number for optimal optimization of dt
 0 =: ots           optimize dt (1:apply opt, !=1:user specify)
 0.0 =: yw            weir height
@@ -33,3 +33,6 @@
 1000 =: maxTableLength         maximum number of data in each cross section file
 101 =: nel         number of line in each cross section attribute table
 2.0 =: timesDepth		multipliyer of depths that will be allowed to be flooded at a section
+..\lower_Mississippi\input\ =: other input path
+4  =: Q_sk_tableEntry	No of entry in the Q-Strickler's coefficient table
+366 =: boundaryFileMaxEntry 	Max No of entry in the input boundary file
