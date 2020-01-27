@@ -9,23 +9,12 @@ subroutine create_I2(k,ncomp)
     save
 
     integer, intent(in) :: k, ncomp
-    !character(len=128) :: fileName1
 
     integer :: i, pp
     real(kind=4) :: usTabProperty(2,nel),dsTabProperty(2,nel)
     real(kind=4) :: currentElev(nel),currentDpth(nel),currentWidth(nel),usWidth(nel),dsWidth(nel), cal_new_I2p(nel),cal_new_I2c(nel)
     real(kind=4) :: x1(nel), y1(nel), dbdxp(nel),dbdxc(nel)
     real(kind=4) :: increm, xt, r_interpo_nn
-
-
-    !write(file_num,'(i4.4)')k
-    !open(11,file=trim(xSection_path)//file_num//'_tab')
-    !fileName1=trim(xSection_path)//file_num//'_tab'
-    !read(11,*)
-    !do i=1,nel
-    !    read(11,*)currentElev(i),temp1,temp1,temp1,temp1,currentWidth(i)
-    !end do
-    !close (11)
 
     currentElev = xsec_tab(1,:,k)
     currentWidth = xsec_tab(6,:,k)
@@ -34,13 +23,6 @@ subroutine create_I2(k,ncomp)
 
 
     if (k .gt. 1) then
-        !write(file_num,'(i4.4)')k-1
-        !open(11,file=trim(xSection_path)//file_num//'_tab')
-        !read(11,*)
-        !do i=1,nel
-        !    read(11,*)usTabProperty(1,i),temp1,temp1,temp1,temp1,usTabProperty(2,i)
-        !end do
-        !close (11)
 
         usTabProperty(1,:) = xsec_tab(1,:,k-1)
         usTabProperty(2,:) = xsec_tab(6,:,k-1)
@@ -54,13 +36,6 @@ subroutine create_I2(k,ncomp)
     end if
 
     if (k .lt. ncomp) then
-        !write(file_num,'(i4.4)')k+1
-        !open(11,file=trim(xSection_path)//file_num//'_tab')
-        !read(11,*)
-        !do i=1,nel
-        !    read(11,*)dsTabProperty(1,i),temp1,temp1,temp1,temp1,dsTabProperty(2,i)
-        !end do
-        !close (11)
 
         dsTabProperty(1,:) = xsec_tab(1,:,k+1)
         dsTabProperty(2,:) = xsec_tab(6,:,k+1)
