@@ -109,7 +109,7 @@ program mesh
     !open(unit=91,file=trim(output_path)//'initialCondition.txt', status='unknown')
     ! read(91, *)
     !do i=1,ncomp
-    !    read(91, *) q(1, i), y(1, i)
+    !    read(91, *) oldQ(i), oldY(i)
     !end do
     !close(91)
 
@@ -156,10 +156,10 @@ program mesh
     ncompElevTable = xsec_tab(1,:,ncomp)
     ncompAreaTable = xsec_tab(2,:,ncomp)
 
-	open(unit=81,file=trim(output_path)//'DS_area.txt', status='unknown')
+	!open(unit=81,file=trim(output_path)//'DS_area.txt', status='unknown')
     xt=oldY(ncomp)
     oldArea(ncomp)=r_interpol(ncompElevTable,ncompAreaTable,nel,xt)
-    write(81, *) t, oldArea(ncomp)
+    !write(81, *) t, oldArea(ncomp)
 
     ! Open files for output
     path = trim(output_path) // 'output_wl.txt'
@@ -315,7 +315,7 @@ program mesh
         write(51, 10) t, (newArea(i), i=1, ncomp)
         end if
 
-        write(81, *) t, newArea(ncomp)
+        !write(81, *) t, newArea(ncomp)
 
         ! update of Y, Q and Area vectors
         oldY   = newY
@@ -328,7 +328,7 @@ program mesh
     close(8)
     close(9)
     close(51)
-    close(81)
+    !close(81)
 
     print*, 'dx', (dx(i), i=1, ncomp-1)
     print*, 'Froude', (froud(i), i=1, ncomp)
@@ -339,8 +339,8 @@ program mesh
     print*, 'Maximum Courant no', maxCourant
 
     !
-!10  format(f12.2 , <ncomp>f12.2)
-10  format(f12.2 , 1000f12.2)
+10  format(f12.2 , <ncomp>f12.2)
+!10  format(f12.2 , 1000f12.2)
 
     call cpu_time( t2 )
     print '("Time = ",f10.3," seconds.")',t2 - t1
