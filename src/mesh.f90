@@ -15,9 +15,9 @@ program mesh
     implicit none
 
     ! Local storage
-    integer(kind=4) :: i, n, ntim, igate, pp, boundaryFileMaxEntry, Q_sk_tableEntry, ppp, qqq
-    real(kind=4) :: areanew, cour, da, dq, dxini, yy, x, thetas, thesinv, tfin
-    real(kind=4) :: t, skk, qq, qn, xt, r_interpol
+    integer(kind=4) :: i, n, ntim, igate, pp, boundaryFileMaxEntry, ppp, qqq, saveFrequency !, areanew
+    real(kind=4) :: cour, da, dq, dxini, yy, x, thetas, thesinv, tfin
+    real(kind=4) :: t, skk, qq, qn, xt, r_interpol, t1, t2, maxCourant
     real(kind=4) :: arean, areac, hyrdn, hyrdc, perimn, perimc, qcrit, s0ds, timesDepth
 
     character(len=128) :: upstream_path , downstream_path
@@ -27,6 +27,8 @@ program mesh
 
     ! open file for input data
     character(len=128) :: dx_path
+
+    call cpu_time( t1 )
 
     open(unit=1,file="../lower_Mississippi/input/input.txt",status='unknown')
 
@@ -67,12 +69,12 @@ program mesh
     read(1,*) nel
     read(1,*) timesDepth
     read(1,*) other_input
-    read(1,*) Q_sk_tableEntry
     read(1,*) boundaryFileMaxEntry
+    read(1,*) saveFrequency
     close (1)
 
     ! Allocate arrays
-    call setup_arrays(ntim, ncomp, Q_sk_tableEntry, boundaryFileMaxEntry)
+    call setup_arrays(ntim, ncomp, maxTableLength, boundaryFileMaxEntry)
     call setup_arrays_section
     call setup_xsec_attribute_module(nel, ncomp)
 
@@ -91,7 +93,8 @@ program mesh
         call readXsection(i,(1.0/sk(i)),timesDepth)
         ! This subroutine creates attribute table for each cross sections and saves in the hdd
         ! setting initial condition
-        y(1,i) = yy ! + z(i)
+        !y(1,i) = yy ! + z(i)
+        oldY(i) = yy ! + z(i)
     end do
     close(85)
 
@@ -110,7 +113,8 @@ program mesh
     !end do
     !close(91)
 
-    q(1, :) = qq
+    !q(1, :) = qq
+    oldQ = qq
 
 
     ! reading Q-Strickler's coefficient multiplier table
@@ -119,6 +123,7 @@ program mesh
         read(86,*,end=300)Q_Sk_Table(1,i), Q_Sk_Table(2,i)
     enddo
 300 close(86)
+	Q_sk_tableEntry = i-1
 
 
     x = 0.0
@@ -139,28 +144,22 @@ program mesh
 302 close(88)
     qqq = n-1
 
-    t = 28857600.0
+    t = 0.0
 
     ! applying boundary
-    ! interpolation of boundaries at the desired time steps
-    do n=1,ntim
-      q(n, 1)=r_interpol(USBoundary(1, :),USBoundary(2, :),ppp,t+(n-1)*dtini)
-      y(n, ncomp) = r_interpol(DSBoundary(1, :),DSBoundary(2, :),qqq,t+(n-1)*dtini)
-    end do
+    ! interpolation of boundaries at the initial time step
 
-! DS Boundary treatment: from water level to area time series
-    do pp=1,nel
-	  elevTable(pp) = xsec_tab(1,pp,ncomp)
-	  areaTable(pp) = xsec_tab(2,pp,ncomp)
-	enddo
+    oldQ(1)    =r_interpol(USBoundary(1, :),USBoundary(2, :),ppp,t)
+    oldY(ncomp)=r_interpol(DSBoundary(1, :),DSBoundary(2, :),qqq,t)
+
+    ! DS Boundary treatment: from water level to area time series
+    ncompElevTable = xsec_tab(1,:,ncomp)
+    ncompAreaTable = xsec_tab(2,:,ncomp)
 
 	open(unit=81,file=trim(output_path)//'DS_area.txt', status='unknown')
-	do n=1,ntim
-		xt=y(n, ncomp)
-		DSarea(n)=r_interpol(elevTable,areaTable,nel,xt)
-		write(81, *) n, DSarea(n)
-	enddo
-	close(81)
+    xt=oldY(ncomp)
+    oldArea(ncomp)=r_interpol(ncompElevTable,ncompAreaTable,nel,xt)
+    write(81, *) t, oldArea(ncomp)
 
     ! Open files for output
     path = trim(output_path) // 'output_wl.txt'
@@ -173,23 +172,30 @@ program mesh
 
     ! Output initial condition
 
-    write(8, 10) t, (y(1, i), i=1,ncomp)
-    write(9, 10) t, (q(1, i), i=1, ncomp)
-    areaSave = 0
-    write(51, 10) t, (areaSave(i), i=1, ncomp)
+    write(8, 10)  t, (oldY(i), i=1,ncomp)
+    write(9, 10)  t, (oldQ(i), i=1, ncomp)
+    write(51, 10) t, (oldArea(i), i=1, ncomp)
 
     !
     ! Loop on time
     !
     do n=1, ntim-1
 
-        ! Set upstream discharge
-        dqp(1) = q(n+1,1) - q(n,1)
+        ! interpolation of boundaries at the desired time step
+        newQ(1)     =r_interpol(USBoundary(1, :),USBoundary(2, :),ppp,t+dtini)
+        newY(ncomp) =r_interpol(DSBoundary(1, :),DSBoundary(2, :),qqq,t+dtini)
 
-        call section(n)
+        xt=newY(ncomp)
+		newArea(ncomp)=r_interpol(ncompElevTable,ncompAreaTable,nel,xt)
+
+        ! Set upstream discharge
+        dqp(1) = newQ(1) - oldQ(1)
+
+        call section()
         ! Nazmul: The subroutine calls the attribute tables and interpolate according to the available water level
         thes=thetas
-        call matrixp(n)
+
+        call matrixp()
 
         do i=2,ncomp
             cour=dt(i)/dx(i-1)
@@ -212,7 +218,7 @@ program mesh
             hyrdn=arean/perimn
             s0ds=-((z(ncomp)-z(ncomp-1))/dx(ncomp))
             qn=skk*arean*hyrdn**(2.0/3.0)*sqrt(s0ds)
-            dqp(ncomp)=qn-q(n,ncomp)
+            dqp(ncomp)=qn-oldQ(ncomp)
             dqc(ncomp)=dqp(ncomp)
 
         elseif(option_dsbc.eq.2)then
@@ -225,7 +231,7 @@ program mesh
             qn=skk*areac*hyrdc**(2.0/3.0)*sqrt(s0ds)
             qcrit=1.05*(((yn**3.0)*(bo(ncomp)**2.0)*grav)**(1.0/2.0))
             write(*,*)qcrit
-            dqp(ncomp)=qcrit-q(n,ncomp)
+            dqp(ncomp)=qcrit-oldQ(ncomp)
             dqc(ncomp)=dqp(ncomp)
 
         else
@@ -235,7 +241,7 @@ program mesh
 
 !            dap(ncomp)=0.0	!checked email !for critical comment out
 ! change for unsteady flow
-			dap(ncomp) = DSarea(n+1) - DSarea(n)
+			dap(ncomp) = newArea(ncomp) - oldArea(ncomp)
             dac(ncomp)=dap(ncomp)	!checked email
             dqc(ncomp)=dqp(ncomp)	!checked email
 
@@ -243,7 +249,7 @@ program mesh
 
         ! Update via predictor
         areap = area + dap
-        qp = q(n, :) + dqp
+        qp = oldQ + dqp
 
         call secpred()
         thes=thesinv
@@ -272,46 +278,49 @@ program mesh
         do i=1,ncomp
             da=(dap(i)+dac(i))/2.0
             dq=(dqp(i)+dqc(i))/2.0
-            areanew=da+area(i)
-            if(areanew <= 0.0) areanew=0.001
+            newArea(i)=da+area(i)
+            if(newArea(i) <= 0.0) newArea(i)=0.001
 
-!       Now calculate y based on area calculated
+!           Now calculate y based on area calculated
 !-------------------------------------
-            !write(file_num,'(i4.4)')i
-
-            !open(unit=29,file=trim(xSection_path)//file_num//'_tab')
-
-            !read(29,*)
-
             do pp=1,nel
                 elevTable(pp) = xsec_tab(1,pp,i)
                 areaTable(pp) = xsec_tab(2,pp,i)
             enddo
-            !close(29)
 
     !       interpolate the cross section attributes based on FINAL CALCULATED area
-            xt=areanew
-            areaSave(i)=areanew
-            y(n+1,i)=r_interpol(areaTable,elevTable,nel,xt)
+            xt=newArea(i)
+            newY(i)=r_interpol(areaTable,elevTable,nel,xt)
 !-------------------------------------
 
-            q(n+1,i)=q(n,i)+dq
-            froud(i)=abs(q(n+1,i))/sqrt(grav*areanew**3.0/bo(i))
+            newQ(i)=oldQ(i)+dq
+            froud(i)=abs(newQ(i))/sqrt(grav*newArea(i)**3.0/bo(i))
 
         end do
 
-        t = t + dtini
-        print "('- cycle',i6,'  terminated')", n
+        do i=1,ncomp-1
+            courant(i)=(newQ(i)+newQ(i+1))/(newArea(i)+newArea(i+1))*dtini/dx(i)
+        enddo
 
-        if (mod(n,60) .eq. 0) then
-        write(8, 10) t, (y(n+1, i), i=1,ncomp)
-        write(9, 10) t, (q(n+1, i), i=1,ncomp)
-        write(51, 10) t, (areaSave(i), i=1, ncomp)
+        if (maxCourant .lt. maxval (courant)) then
+            maxCourant = maxval (courant)
+        endif
+
+        t = t + dtini
+        print "('- cycle',i9,'  completed')", n
+
+        if (mod(n,saveFrequency) .eq. 0) then
+        write(8, 10) t, (newY(i), i=1,ncomp)
+        write(9, 10) t, (newQ(i), i=1,ncomp)
+        write(51, 10) t, (newArea(i), i=1, ncomp)
         end if
-        ! re-read some info
-        !open(unit=1,file="../lower_Mississippi/input/input4.txt",status='unknown')
-        !read(1,*) dtini
-        !close (1)
+
+        write(81, *) t, newArea(ncomp)
+
+        ! update of Y, Q and Area vectors
+        oldY   = newY
+        oldQ   = newQ
+        oldArea= newArea
 
     end do
     ! End of time loop
@@ -319,14 +328,21 @@ program mesh
     close(8)
     close(9)
     close(51)
+    close(81)
 
     print*, 'dx', (dx(i), i=1, ncomp-1)
     print*, 'Froude', (froud(i), i=1, ncomp)
     print*, 'Bed', (z(i), i=1, ncomp)
-    print*, 'areaSave', (areaSave(i), i=1, ncomp)
+    print*, 'newArea', (newArea(i), i=1, ncomp)
     print*, 'I2_corr', (ci2(i), i=1, ncomp)
+    print*, 'Courant no', (courant(i), i=1, ncomp-1)
+    print*, 'Maximum Courant no', maxCourant
 
-    ! pause 202
-10  format(f12.2 , <ncomp>f12.2)
+    !
+!10  format(f12.2 , <ncomp>f12.2)
+10  format(f12.2 , 1000f12.2)
 
+    call cpu_time( t2 )
+    print '("Time = ",f10.3," seconds.")',t2 - t1
+    pause 202
 end program mesh
