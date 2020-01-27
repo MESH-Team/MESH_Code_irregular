@@ -1,4 +1,4 @@
-subroutine section(n)
+subroutine section()
 
     use constants_module
     use arrays_module
@@ -9,7 +9,7 @@ subroutine section(n)
     implicit none
 
     ! Locals
-    integer, intent(in) :: n
+    !integer, intent(in) :: n
     integer :: i, pp
     real(kind=4) :: beds, fs, hy, yyn, yyn_1, temp1, temp2, new_I2
     real(kind=4) :: xt, q_sk_multi, currentQ
@@ -22,13 +22,14 @@ subroutine section(n)
     do i=1,ncomp
 
         if(i .gt. 1) then
-            upstreamEleTable = elevTable
-            upstreamTopwTable = topwTable
+            !upstreamEleTable = elevTable
+            !upstreamTopwTable = topwTable
             upstreamI2Tablec = I2Tablec
             upstreamSquareDepth = currentSquareDepth
         end if
 
-        depth(i)=y(n,i)-z(i)
+        !depth(i)=y(n,i)-z(i)
+        depth(i)=oldY(i)-z(i)
 
 !      Nazmul change: read all attributes from tab file
 
@@ -57,7 +58,8 @@ subroutine section(n)
         I2Tablec = xsec_tab(10,:,i)
 
 !     interpolate the cross section attributes based on water elevation
-        xt=y(n,i)
+        !xt=y(n,i)
+        xt=oldY(i)
 
         area(i)=r_interpol(elevTable,areaTable,nel,xt)
         !area(i)=r_interpol(x_tab,areaTable,nel,xt)
@@ -69,9 +71,9 @@ subroutine section(n)
         ci1(i) =r_interpol(currentSquareDepth,nwi1Table,nel,(depth(i))**2)
         dpda(i)=r_interpol(elevTable,dPdATable,nel,xt)
 
-        currentQ = q(n,i)
-        pp = size(Q_Sk_Table(1,:))
-        q_sk_multi = r_interpo_nn(Q_Sk_Table(1,:),Q_Sk_Table(2,:),pp,currentQ)
+        !currentQ = q(n,i)
+        currentQ = oldQ(i)
+        q_sk_multi = r_interpo_nn(Q_Sk_Table(1,:),Q_Sk_Table(2,:),Q_sk_tableEntry,currentQ)
         co(i) = q_sk_multi*co(i)
 
 
@@ -79,8 +81,12 @@ subroutine section(n)
         if(i .gt. 1) then
 
 ! I2 calculated as interpolation start
-        yyn=y(n,i)
-        yyn_1=y(n,i-1)
+        !yyn=y(n,i)
+        !yyn_1=y(n,i-1)
+
+        yyn=oldY(i)
+        yyn_1=oldY(i-1)
+
         !open(unit=21,file=trim(xSection_path)//file_num//'_I2')
         !read(21,*)
 
@@ -97,7 +103,8 @@ subroutine section(n)
             if(ityp(i-1) == 1) then
                  ci2(i)=new_I2
                  beds=(z(i-1)-z(i))/dx(i-1)
-                 fs=f*0.5*q(n,i-1)*abs(q(n,i-1))/(co(i-1)*co(i-1))+f*0.5*q(n,i)*abs(q(n,i))/(co(i)*co(i))
+                 !fs=f*0.5*q(n,i-1)*abs(q(n,i-1))/(co(i-1)*co(i-1))+f*0.5*q(n,i)*abs(q(n,i))/(co(i)*co(i))
+                 fs=f*0.5*oldQ(i-1)*abs(oldQ(i-1))/(co(i-1)*co(i-1))+f*0.5*oldQ(i)*abs(oldQ(i))/(co(i)*co(i))
                  aso(i)=(area(i)+area(i-1))/2.0*(beds-fs)
                  gso(i)=grav*(beds-fs)
                  dbdx(i)=(bo(i)-bo(i-1))/dx(i-1)
