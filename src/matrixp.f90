@@ -1,4 +1,4 @@
-subroutine matrixp(n)
+subroutine matrixp()
 
     use constants_module
     use arrays_module
@@ -11,7 +11,7 @@ subroutine matrixp(n)
     implicit none
 
     ! Input
-    integer, intent(in) :: n
+    !integer, intent(in) :: n
 
     ! Local
     integer :: i
@@ -19,7 +19,7 @@ subroutine matrixp(n)
     real(kind=4) :: cour, crmax, crmin, di, dim1, dip1, dkda, ei, ei1, eia, ter
 
     do i=1,ncomp
-        u(i)=q(n,i)/area(i)
+        u(i)=oldQ(i)/area(i)
 
         ! Nazmul: TODO, check if this equation is good for natural channel
         c(i)=sqrt(grav*area(i)/bo(i))
@@ -71,10 +71,10 @@ subroutine matrixp(n)
         st(1, 1)=0.0
         st(1, 2)=0.0
         st(2, 1)=grav*area(i)/bo(i)/bo(i)*dbdx(i)+gso(i)      &
-                +f*2.0*grav*area(i)*q(n,i)*abs(q(n,i))/co(i)**3.0*dkda
+                +f*2.0*grav*area(i)*oldQ(i)*abs(oldQ(i))/co(i)**3.0*dkda
 
         !Nazmul: st(2,2) term is multiplied with a gravity
-        st(2,2)=-2*f*q(n,i)*grav*area(i)/co(i)/co(i)
+        st(2,2)=-2*f*oldQ(i)*grav*area(i)/co(i)/co(i)
 
 
         if(dx(i) < TOLERANCE) then
@@ -110,9 +110,10 @@ subroutine matrixp(n)
         g21inv(i)=-g(2,1)/(g(1,1)*g(2,2)-g(1,2)*g(2,1))
         g22inv(i)= g(1,1)/(g(1,1)*g(2,2)-g(1,2)*g(2,1))
 
-        f1(i)=q(n,i)
+        !f1(i)=q(n,i)
+        f1(i)=oldQ(i)
         !print *, ncomp, i, area(i)
-        f2(i)=q(n,i)*q(n,i)/area(i)+grav*ci1(i)
+        f2(i)=oldQ(i)*oldQ(i)/area(i)+grav*ci1(i)
 
         if(i >= 2 .and. i < ncomp) then
             dip1=area(i+1)/bo(i+1)
@@ -171,11 +172,11 @@ subroutine matrixp(n)
             d2(i)=0.0
         elseif(i.eq.2.or.i.eq.(ncomp-1)) then
             d1(i)=eps2(i)*eia*(area(i+1)-area(i))
-            d2(i)=eps2(i)*eia*(q(n,i+1)-q(n,i))
+            d2(i)=eps2(i)*eia*(oldQ(i+1)-oldQ(i))
             ! print *, i,d1(i),d2(i),eps2(i),area(i+1),area(i)
         else
             d1(i)=eps2(i)*eia*(area(i+1)-area(i))-eps4(i)*(area(i+2)-3*area(i+1)+3*area(i)-area(i-1))
-            d2(i)=eps2(i)*eia*(q(n,i+1)-q(n,i))-eps4(i)*(q(n,i+2)-3*q(n,i+1)+3*q(n,i)-q(n,i-1))
+            d2(i)=eps2(i)*eia*(oldQ(i+1)-oldQ(i))-eps4(i)*(oldQ(i+2)-3*oldQ(i+1)+3*oldQ(i)-oldQ(i-1))
         endif
         ! print *, i,d1(i),d2(i),eps2(i),area(i+1),area(i)
     end do
