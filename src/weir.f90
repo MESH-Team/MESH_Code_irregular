@@ -1,4 +1,5 @@
-subroutine weir(i, n)
+!subroutine weir(i, n)
+subroutine weir(i)
 
     use constants_module
     use arrays_module
@@ -13,7 +14,7 @@ subroutine weir(i, n)
     implicit none
 
     ! Input
-    integer, intent(in) :: i, n
+    integer, intent(in) :: i !, n
 
     ! Locals
     real(kind=4), parameter :: rad = 3.1415927
@@ -23,15 +24,18 @@ subroutine weir(i, n)
     dmeu=1.0
 
     ! Normal (non-reverse) flow
-    yus=y(n,i-1)
-    yds=y(n,i)
+    !yus=y(n,i-1)
+    yus=oldY(i-1)
+    !yds=y(n,i)
+    yds=oldY(i)
     ! print *, yus,yds,yw
     if((yds-yw) > (2.*(yus-yw)/3.0)) then
         ! print *, 'yes'
         ! Flooded flow
         dusw=(area(i-1)+dap(i-1))/bo(i-1)
         yusw=dusw+z(i-1)
-        qusw=q(n,i-1)+dqp(i-1)
+        !qusw=q(n,i-1)+dqp(i-1)
+        qusw=oldQ(i-1)+dqp(i-1)
 
         ! Solving the qubic equation and finding the proper root
         ! Note: only one root will satisfy the conditions
@@ -112,11 +116,13 @@ subroutine weir(i, n)
         qusw=2./3.0*dmeu*bw*sqrt(2.0*grav/3.)*(yusw-yw)**1.5
         sq=qusw/bw
         ddsw=(sq*sq/grav)**0.3333333
-        dqp(i-1)=qusw-q(n,i-1)
+        !dqp(i-1)=qusw-q(n,i-1)
+		dqp(i-1)=qusw-oldQ(i-1)
         dqp(i)=dqp(i-1)
         dap(i)=ddsw*bo(i)-area(i)
         ! print *, i,dqp(i-1)
-        print *, 'free',dusw,qusw,ddsw,dqp(i),dap(i),y(n,i)
+        !print *, 'free',dusw,qusw,ddsw,dqp(i),dap(i),y(n,i)
+		print *, 'free',dusw,qusw,ddsw,dqp(i),dap(i),oldY(i)
     endif
 
 end subroutine weir
