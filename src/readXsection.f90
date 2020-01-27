@@ -21,7 +21,7 @@ subroutine readXsection(k,rmanning,timesDepth)
 
     ! Assign some parameters
     ! f2m is conversion if the data is in feet
-    ! Nazmul: At one point, it needs to be moved to a module
+
     f2m=1.0
 
 !     Open data file
@@ -64,24 +64,9 @@ subroutine readXsection(k,rmanning,timesDepth)
       enddo
       close(11)
 
-!     start calculating
-!      do j=1,nel
-
       open(11,file=trim(xSection_path)//file_num//'_lines')
       open(22,file=trim(xSection_path)//file_num//'_tab')
       write(22,'(120a)')' Elev(m)    Area(m2)     Peri(m)      Radi(m)   Conv(m3/s)    topWidth(m)    newI1(m3)    dPdA(1/m)'  ! Hu changed
-
-!      el1(1)=el_min
-!      a1(1) =0
-!      peri1(1)=0
-!      redi1(1)=0
-!      conv1(1)=0
-!      tpW1(1)=0
-!      newI1(1)=0
-!      newdPdA(1)=0
-!      write(22,10)el1(1),a1(1),peri1(1),redi1(1),conv1(1),    &
-!                   tpW1(1),newI1(1),newdPdA(1)
-!10    format(f9.2,3f12.2,2f20.3,2f16.2)
 
 
       do j=1,nel
