@@ -1,8 +1,8 @@
-30 =: dtini         Time step dt
+60 =: dtini         Time step dt
 20.0 =: dxini         Spatial step dx
 1844.0 =: tfin          Final time
 722 =: ncomp         number of nodes
-1036771 =: ntim          number of timesteps !1036771
+1048320 =: ntim          number of timesteps !1036771 // 1033890 // 1033890 
 1.0 =: phi           source term treatment (0:explicit, 1:implicit)
 1.0 =: theta         ?
 1.0 =: thetas        ?
@@ -34,5 +34,5 @@
 101 =: nel         number of line in each cross section attribute table
 2.0 =: timesDepth		multipliyer of depths that will be allowed to be flooded at a section
 ..\lower_Mississippi\input\ =: other input path
-4  =: Q_sk_tableEntry	No of entry in the Q-Strickler's coefficient table
 366 =: boundaryFileMaxEntry 	Max No of entry in the input boundary file
+360 =: Result Saving frequency
