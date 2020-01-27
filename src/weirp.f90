@@ -1,4 +1,5 @@
-subroutine weirp(i, n)
+!subroutine weirp(i, n)
+subroutine weirp(i)
 
     use constants_module
     use arrays_module
@@ -11,7 +12,7 @@ subroutine weirp(i, n)
     implicit none
 
     ! Input
-    integer, intent(in) :: i, n
+    integer, intent(in) :: i !, n
 
     ! Locals
     real(kind=4) :: yus, ddsw, dusw, frds, qdsw, yds, ydsw, yusw
@@ -19,7 +20,8 @@ subroutine weirp(i, n)
     yus=areap(i)/bo(i)+z(i)
     ! yds=(areap(i+1))/bo(i+1)+z(i+1)
     ydsn=(area(i+1)+dac(i+1))**3./bo(i+1)
-    frds=(q(n,i+1)+dqc(i+1))/sqrt(grav*ydsn)
+    !frds=(q(n,i+1)+dqc(i+1))/sqrt(grav*ydsn)
+	frds=(oldQ(i+1)+dqc(i+1))/sqrt(grav*ydsn)
     print *, 'weirp',yus,yds
     if(frds < 1) then
         ! if((yds-yw).gt.(2.*(yus-yw)/3.0)) then
@@ -27,7 +29,8 @@ subroutine weirp(i, n)
         ! Flooded flow
         ddsw=(area(i+1)+dac(i+1))/bo(i+1)
         ydsw=ddsw+z(i+1)
-        qdsw=q(n,i+1)+dqc(i+1)
+        !qdsw=q(n,i+1)+dqc(i+1)
+		qdsw=oldQ(i+1)+dqc(i+1)
         yusw=ydsw+(qdsw/(dmeu*bw*(ydsw-yw)))**2.0/(2.0*grav)
         dusw=yusw-z(i)
         dqc(i)=dqc(i+1)
