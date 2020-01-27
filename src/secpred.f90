@@ -22,28 +22,11 @@ subroutine secpred()
     do i=ncomp,1,-1
 
         if(i .lt. ncomp) then
-            downstreamEleTable = elevTable
-            downstreamTopwTable = topwTable
-            downstreamAreaTable = areaTable
             downstreamI2Tablep = I2Tablep
             downstreamSquareDepth = currentSquareDepth
             yyn_1 = yyn
         end if
 ! ----------------------------------------------------
-        !write(file_num,'(i4.4)')i
-
-        !open(unit=19,file=trim(xSection_path)//file_num//'_tab')
-
-        !read(19,*)
-
-        !do pp=1,nel
-        !    read(19,*,end=300)elevTable(pp),areaTable(pp),pereTable(pp),rediTable(pp),  &
-        !        convTable(pp),topwTable(pp),nwi1Table(pp),dPdATable(pp)
-        !    currentSquareDepth(pp)=(elevTable(pp)-z(i))**2
-        !enddo
-!300     !close(19)
-
-
         elevTable = xsec_tab(1,:,i)
         areaTable = xsec_tab(2,:,i)
         pereTable = xsec_tab(3,:,i)
@@ -60,6 +43,7 @@ subroutine secpred()
         xt=areap(i)
 
         ! NEW CHANGE: 20191119
+        ! To get rid of negative predicted area
         if (areap(i) .le. TOLERANCE) then
             yyn = elevTable(1)+(elevTable(2)-elevTable(1))/100*5
             !areap(i) = 0.01
@@ -80,26 +64,13 @@ subroutine secpred()
         dpda(i)=r_interpol(elevTable,dPdATable,nel,xt)
 
         currentQ = qp(i)
-        pp = size(Q_Sk_Table(1,:))
-        q_sk_multi = r_interpo_nn(Q_Sk_Table(1,:),Q_Sk_Table(2,:),pp,currentQ)
+        q_sk_multi = r_interpo_nn(Q_Sk_Table(1,:),Q_Sk_Table(2,:),Q_sk_tableEntry,currentQ)
         co(i) = q_sk_multi*co(i)
-
-
 ! ----------------------------------------------------
         if(i .lt. ncomp) then
 
 ! I2 opposite direction calculated as interpolation start
         xt=areap(i+1)
-
-        !open(unit=21,file=trim(xSection_path)//file_num//'_I2')
-        !read(21,*)
-
-        !do pp=1,nel
-        !  read(21,*)temp1,temp1,temp1,I2Tablep(pp),I2Tablec(pp)
-        !enddo
-        !close(21)
-
-
 
         temp1 = r_interpol(currentSquareDepth,I2Tablec,nel,(yyn-z(i))**2)
         temp2 = r_interpol(downstreamSquareDepth,downstreamI2Tablep, nel,(yyn_1-z(i+1))**2)
