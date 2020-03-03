@@ -16,16 +16,22 @@ subroutine dsbc()
     real(kind=4) :: ads, frds, qn, yconj
 
     ! compute conjugate depth at dwon stream end
+    !ads=(y(n,ncomp)-z(ncomp))*bo(ncomp)
 	ads=(oldY(ncomp)-z(ncomp))*bo(ncomp)
+    !frds=q(n,ncomp)/sqrt(grav*ads**3.0/bo(ncomp))
 	frds=oldQ(ncomp)/sqrt(grav*ads**3.0/bo(ncomp))
+    !yconj=0.5*(y(n,ncomp)-z(ncomp))*(sqrt(1.0+8.0*frds*frds)-1.0)
     yconj=0.5*(oldY(ncomp)-z(ncomp))*(sqrt(1.0+8.0*frds*frds)-1.0)
     yconj=yconj+z(ncomp)
+    !print *, yn,y(n,ncomp),yconj,z(ncomp)
     print *, yn,oldY(ncomp),yconj,z(ncomp)
     if(yconj < yn) then
         ! print *, 'no'
         if(option == 1) then
             ! downstream water level imposed (option 1)
+            !dac(ncomp)=(yn-y(n,ncomp))*bo(ncomp)
             dac(ncomp)=(yn-oldY(ncomp))*bo(ncomp)
+            !dap(ncomp)=(yn-y(n,ncomp))*bo(ncomp)
             dap(ncomp)=(yn-oldY(ncomp))*bo(ncomp)
             dqc(ncomp)=dqp(ncomp)
             ! print *, 'yes',dac(ncomp),yn,oldY(ncomp),dqc(ncomp)
@@ -39,6 +45,7 @@ subroutine dsbc()
             dac(ncomp)=dap(ncomp)
             yn=(area(ncomp)+dap(ncomp))/bo(ncomp)
             qn=0.65*10*1.0*sqrt(2.0*grav*(yn-0.5))
+            !dqp(ncomp)=qn-q(n,ncomp)
 			dqp(ncomp)=qn-oldQ(ncomp)
             dqc(ncomp)=dqp(ncomp)
         end if

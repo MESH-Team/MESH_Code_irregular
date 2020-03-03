@@ -6,12 +6,7 @@ subroutine matrixp()
     use var_module
     use arrays_section_module
 
-     !  common/sgate/ag,bg,option,yn,eps,dmeu,yw,bw,ydsn
-
     implicit none
-
-    ! Input
-    !integer, intent(in) :: n
 
     ! Local
     integer :: i
@@ -24,8 +19,6 @@ subroutine matrixp()
         ! Nazmul: TODO, check if this equation is good for natural channel
         c(i)=sqrt(grav*area(i)/bo(i))
 
-!      Nazmul change proposed:
-!      c(i)=sqrt(grav*y(n,i))
 
         ! This is the matrix L (left eigenvector matrix - eq 13)
         e(1,1)=1.0
@@ -173,7 +166,6 @@ subroutine matrixp()
         elseif(i.eq.2.or.i.eq.(ncomp-1)) then
             d1(i)=eps2(i)*eia*(area(i+1)-area(i))
             d2(i)=eps2(i)*eia*(oldQ(i+1)-oldQ(i))
-            ! print *, i,d1(i),d2(i),eps2(i),area(i+1),area(i)
         else
             d1(i)=eps2(i)*eia*(area(i+1)-area(i))-eps4(i)*(area(i+2)-3*area(i+1)+3*area(i)-area(i-1))
             d2(i)=eps2(i)*eia*(oldQ(i+1)-oldQ(i))-eps4(i)*(oldQ(i+2)-3*oldQ(i+1)+3*oldQ(i)-oldQ(i-1))

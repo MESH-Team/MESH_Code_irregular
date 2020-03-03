@@ -66,12 +66,12 @@ subroutine secpred()
         currentQ = qp(i)
         q_sk_multi = r_interpo_nn(Q_Sk_Table(1,:),Q_Sk_Table(2,:),Q_sk_tableEntry,currentQ)
         co(i) = q_sk_multi*co(i)
+
 ! ----------------------------------------------------
         if(i .lt. ncomp) then
 
 ! I2 opposite direction calculated as interpolation start
         xt=areap(i+1)
-
         temp1 = r_interpol(currentSquareDepth,I2Tablec,nel,(yyn-z(i))**2)
         temp2 = r_interpol(downstreamSquareDepth,downstreamI2Tablep, nel,(yyn_1-z(i+1))**2)
         new_I2 = (temp1+temp2)/2.0
@@ -80,7 +80,6 @@ subroutine secpred()
             if(ityp(i) == 1) then
                 ci2(i)=new_I2
                 beds=(z(i)-z(i+1))/dx(i)
-                ! CHECK LOOP
                 fs=f*0.5*qp(i)*abs(qp(i))/(co(i)**2)+f*0.5*qp(i+1)*abs(qp(i+1))/(co(i+1)**2)
                 aso(i)=(areap(i)+areap(i+1))/2.0*(beds-fs)
                 gso(i)=grav*(beds-fs)
