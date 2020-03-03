@@ -22,29 +22,13 @@ subroutine section()
     do i=1,ncomp
 
         if(i .gt. 1) then
-            !upstreamEleTable = elevTable
-            !upstreamTopwTable = topwTable
             upstreamI2Tablec = I2Tablec
             upstreamSquareDepth = currentSquareDepth
         end if
 
-        !depth(i)=y(n,i)-z(i)
         depth(i)=oldY(i)-z(i)
 
 !      Nazmul change: read all attributes from tab file
-
-        !write(file_num,'(i4.4)')i
-
-        !open(unit=19,file=trim(xSection_path)//file_num//'_tab')
-
-        !read(19,*)
-
-        !do pp=1,nel
-        !  read(19,*,end=300)elevTable(pp),areaTable(pp),pereTable(pp),rediTable(pp),  &
-        !             convTable(pp),topwTable(pp),nwi1Table(pp),dPdATable(pp)
-        !  currentSquareDepth(pp)=(elevTable(pp)-z(i))**2
-        !enddo
-!300     !close(19)
         elevTable = xsec_tab(1,:,i)
         areaTable = xsec_tab(2,:,i)
         pereTable = xsec_tab(3,:,i)
@@ -58,7 +42,6 @@ subroutine section()
         I2Tablec = xsec_tab(10,:,i)
 
 !     interpolate the cross section attributes based on water elevation
-        !xt=y(n,i)
         xt=oldY(i)
 
         area(i)=r_interpol(elevTable,areaTable,nel,xt)
@@ -71,7 +54,6 @@ subroutine section()
         ci1(i) =r_interpol(currentSquareDepth,nwi1Table,nel,(depth(i))**2)
         dpda(i)=r_interpol(elevTable,dPdATable,nel,xt)
 
-        !currentQ = q(n,i)
         currentQ = oldQ(i)
         q_sk_multi = r_interpo_nn(Q_Sk_Table(1,:),Q_Sk_Table(2,:),Q_sk_tableEntry,currentQ)
         co(i) = q_sk_multi*co(i)
@@ -81,20 +63,8 @@ subroutine section()
         if(i .gt. 1) then
 
 ! I2 calculated as interpolation start
-        !yyn=y(n,i)
-        !yyn_1=y(n,i-1)
-
         yyn=oldY(i)
         yyn_1=oldY(i-1)
-
-        !open(unit=21,file=trim(xSection_path)//file_num//'_I2')
-        !read(21,*)
-
-        !do pp=1,nel
-        !  read(21,*)temp1,temp1,temp1,I2Tablep(pp),I2Tablec(pp)
-        !enddo
-        !close(21)
-
         temp1 = r_interpol(currentSquareDepth,I2Tablep,nel,(depth(i))**2)
         temp2 = r_interpol(upstreamSquareDepth, upstreamI2Tablec, nel, (depth(i-1))**2)
         new_I2 = (temp1+temp2)/2.0
@@ -103,7 +73,6 @@ subroutine section()
             if(ityp(i-1) == 1) then
                  ci2(i)=new_I2
                  beds=(z(i-1)-z(i))/dx(i-1)
-                 !fs=f*0.5*q(n,i-1)*abs(q(n,i-1))/(co(i-1)*co(i-1))+f*0.5*q(n,i)*abs(q(n,i))/(co(i)*co(i))
                  fs=f*0.5*oldQ(i-1)*abs(oldQ(i-1))/(co(i-1)*co(i-1))+f*0.5*oldQ(i)*abs(oldQ(i))/(co(i)*co(i))
                  aso(i)=(area(i)+area(i-1))/2.0*(beds-fs)
                  gso(i)=grav*(beds-fs)

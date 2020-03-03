@@ -15,14 +15,14 @@ program mesh
     implicit none
 
     ! Local storage
-    integer(kind=4) :: i, n, ntim, igate, pp, boundaryFileMaxEntry, ppp, qqq, saveFrequency !, areanew
+    integer(kind=4) :: i, j, n, ntim, igate, pp, boundaryFileMaxEntry, ppp, qqq, saveFrequency, noLatFlow !, areanew
     real(kind=4) :: cour, da, dq, dxini, yy, x, thetas, thesinv, tfin
     real(kind=4) :: t, skk, qq, qn, xt, r_interpol, t1, t2, maxCourant
-    real(kind=4) :: arean, areac, hyrdn, hyrdc, perimn, perimc, qcrit, s0ds, timesDepth
+    real(kind=4) :: arean, areac, hyrdn, hyrdc, perimn, perimc, qcrit, s0ds, timesDepth !, latFlowValue
 
     character(len=128) :: upstream_path , downstream_path
     character(len=128) :: bed_elevation_path, output_path, other_input
-    character(len=128) :: channel_width_path
+    character(len=128) :: channel_width_path, lateralFlow_path
     character(len=128) :: path
 
     ! open file for input data
@@ -30,7 +30,9 @@ program mesh
 
     call cpu_time( t1 )
 
-    open(unit=1,file="../lower_Mississippi/input/input.txt",status='unknown')
+    open(unit=1,file="../lower_Mississippi/input/input_BR_2_HOP_2016.txt",status='unknown')
+
+    print*, 'Reading input file'
 
     ! read data
     read(1,*) dtini
@@ -63,6 +65,7 @@ program mesh
     read(1,*) downstream_path
     read(1,*) channel_width_path
     read(1,*) dx_path
+    read(1,*) lateralFlow_path
     read(1,*) output_path
     read(1,*) option_dsbc
     read(1,*) maxTableLength
@@ -71,10 +74,37 @@ program mesh
     read(1,*) other_input
     read(1,*) boundaryFileMaxEntry
     read(1,*) saveFrequency
+    read(1,*) noLatFlow
+
+    allocate(latFlowLocations(noLatFlow))   ! all the first nodes where a lateral flow starts
+    allocate(latFlowType(noLatFlow))        ! Lateral flow type: Type = 1 = time series; Type 2 = flow as a function of upstream flow
+    allocate(latFlowXsecs(noLatFlow))       ! no of x-secs at the downstream that the lateral flow is applied
+
+    read(1,*) (latFlowLocations(i), i=1, noLatFlow)
+    do i=1,noLatFlow
+        if ((latFlowLocations(i)-1)*(latFlowLocations(i)-ncomp) .eq. 0) then
+            print*, 'ERROR: Lateral flow cannot be applied at the boundaries'
+            stop
+        end if
+    end do
+    read(1,*) (latFlowType(i), i=1, noLatFlow)
+    do i=1,noLatFlow
+        if (latFlowType(i) .eq. 1) then
+            print*, 'Lateral flow at node = ', latFlowLocations(i), ', is a time series'
+        elseif (latFlowType(i) .eq. 2) then
+            print*, 'Lateral flow at node = ', latFlowLocations(i), ', is a function of upstream flow'
+        else
+            print*, 'Wrong lateral flow type is provided. Type ', latFlowType(i), 'is not a valid type'
+            stop
+        end if
+    end do
+
+    read(1,*) (latFlowXsecs(i), i=1, noLatFlow)
+
     close (1)
 
     ! Allocate arrays
-    call setup_arrays(ntim, ncomp, maxTableLength, boundaryFileMaxEntry)
+    call setup_arrays(ntim, ncomp, maxTableLength, boundaryFileMaxEntry, noLatFlow)
     call setup_arrays_section
     call setup_xsec_attribute_module(nel, ncomp)
 
@@ -87,7 +117,7 @@ program mesh
     close(90)
 
     ! reading Strickler's coefficient at each section
-    open(unit=85,file=trim(other_input)//'Mannings_Stricklers_coeff.txt', status='unknown')
+    open(unit=85,file=trim(other_input)//'Mannings_Stricklers_coeff_1153Nodes.txt', status='unknown')
     do i=1,ncomp
         read(85, *) x, sk(i)
         call readXsection(i,(1.0/sk(i)),timesDepth)
@@ -161,6 +191,19 @@ program mesh
     oldArea(ncomp)=r_interpol(ncompElevTable,ncompAreaTable,nel,xt)
     !write(81, *) t, oldArea(ncomp)
 
+
+    ! read lateral flow conditions
+    do i=1,noLatFlow
+        write(file_num,'(i4.4)')latFlowLocations(i)
+        open(89,file=trim(lateralFlow_path)//'lateral_'//file_num//'.txt')
+        do n=1,boundaryFileMaxEntry
+            read(89,*,end=303) lateralFlowTable(1, n, i), lateralFlowTable(2, n, i)
+        end do
+303     close(89)
+        dataInEachLatFlow(i) = n-1
+    end do
+
+
     ! Open files for output
     path = trim(output_path) // 'output_wl.txt'
     open(unit=8, file=trim(path), status='unknown')
@@ -188,6 +231,32 @@ program mesh
         xt=newY(ncomp)
 		newArea(ncomp)=r_interpol(ncompElevTable,ncompAreaTable,nel,xt)
 
+		! applying lateral flow at the oldQ
+		lateralFlow = 0
+        do i=1,noLatFlow
+            if (latFlowType(i) .eq. 1) then
+                lateralFlow(latFlowLocations(i)) = r_interpol(lateralFlowTable(1, :, i), &
+                    lateralFlowTable(2, :, i),dataInEachLatFlow(i),t)
+            elseif (latFlowType(i) .eq. 2) then
+                lateralFlow(latFlowLocations(i)) = r_interpol(lateralFlowTable(1, :, i), &
+                    lateralFlowTable(2, :, i),dataInEachLatFlow(i),oldQ(latFlowLocations(i)))
+            endif
+                lateralFlow(latFlowLocations(i)) = lateralFlow(latFlowLocations(i))/ &
+                    sum(dx(latFlowLocations(i):latFlowLocations(i)+latFlowXsecs(i)-1))
+
+            do j=1,latFlowXsecs(i)-1
+                lateralFlow(latFlowLocations(i)+j)=lateralFlow(latFlowLocations(i))
+            end do
+            !print*, 'lat flow=', latFlowValue, latFlowLocations(i), &
+            !    latFlowValue*(dx(latFlowLocations(i)-1)+dx(latFlowLocations(i)))*0.5, &
+            !    oldQ(latFlowLocations(i))
+            ! print*, 'lat flow at', latFlowLocations(i), &
+            !    'flow=',lateralFlow(latFlowLocations(i))*0.5*(dx(latFlowLocations(i)-1)+dx(latFlowLocations(i))), &
+            !    dx(latFlowLocations(i)-1), dx(latFlowLocations(i))
+        end do
+        !print*, 'noLatFlow',noLatFlow
+        !print*, 'lateralFlow', (lateralFlow(i), i=1, ncomp)
+
         ! Set upstream discharge
         dqp(1) = newQ(1) - oldQ(1)
 
@@ -198,8 +267,9 @@ program mesh
         call matrixp()
 
         do i=2,ncomp
-            cour=dt(i)/dx(i-1)
-            rhs1=-cour*(f1(i)-f1(i-1)-d1(i)+d1(i-1))
+            !cour=dt(i)/dx(i-1)
+            cour=dtini/dx(i-1)
+            rhs1=-cour*(f1(i)-f1(i-1)-d1(i)+d1(i-1))+lateralFlow(i)*dtini*dx(i)/dx(i-1)
             rhs2=-cour*(f2(i)-f2(i-1)-d2(i)+d2(i-1))+dt(i)*grav*(ci2(i)+aso(i))
             c11=g11inv(i)*b11(i-1)+g12inv(i)*b21(i-1)
             c12=g11inv(i)*b12(i-1)+g12inv(i)*b22(i-1)
@@ -207,8 +277,17 @@ program mesh
             c22=g21inv(i)*b12(i-1)+g22inv(i)*b22(i-1)
             dap(i)=g11inv(i)*rhs1+g12inv(i)*rhs2-c11*dap(i-1)-c12*dqp(i-1)
             dqp(i)=g21inv(i)*rhs1+g22inv(i)*rhs2-c21*dap(i-1)-c22*dqp(i-1)
+           ! print*,'rhs1=', rhs1, rhs2, c11, c12, c21, c22
         end do
 
+       ! print*, 'f1(i)', (f1(i), i=1, ncomp)
+       ! print*, 'd1(i)', (d1(i), i=1, ncomp)
+       ! print*, 'g11inv(i)', (g11inv(i), i=1, ncomp)
+       ! print*, 'g12inv(i)', (g12inv(i), i=1, ncomp)
+       ! print*, 'g21inv(i)', (g21inv(i), i=1, ncomp)
+       ! print*, 'g22inv(i)', (g22inv(i), i=1, ncomp)
+       ! print*, 'dap(i)', (dap(i), i=1, ncomp)
+       ! print*, 'dqp(i)', (dqp(i), i=1, ncomp)
         ! Boundary conditions at downstream (right boundary)
         if (option_dsbc.eq.1) then
             dac(ncomp)=dap(ncomp)
@@ -251,13 +330,28 @@ program mesh
         areap = area + dap
         qp = oldQ + dqp
 
+
+        ! applying lateral flow at the qp
+        !do i=1,noLatFlow
+        !    latFlowValue = r_interpol(lateralFlowTable(1, :, i),lateralFlowTable(2, :, i),dataInEachLatFlow(i),t)
+        !    qp(latFlowLocations(i)) = qp(latFlowLocations(i)) + &
+        !        latFlowValue*(dx(latFlowLocations(i)-1)+dx(latFlowLocations(i)))*0.5
+        !    print*, 'lat flow=', latFlowValue, latFlowLocations(i), &
+        !        latFlowValue*(dx(latFlowLocations(i)-1)+dx(latFlowLocations(i)))*0.5, &
+        !        qp(latFlowLocations(i))
+        !end do
+
+        !print*, 'areap', (areap(i), i=1, ncomp)
+
+
         call secpred()
         thes=thesinv
         call matrixc()
 
         do i=ncomp-1,1,-1
-            cour=dt(i)/dx(i)
-            rhs1=-cour*(f1(i+1)-f1(i)-d1(i+1)+d1(i))
+            !cour=dt(i)/dx(i)
+            cour=dtini/dx(i)
+            rhs1=-cour*(f1(i+1)-f1(i)-d1(i+1)+d1(i))+lateralFlow(i)*dtini*dx(i)/dx(i)
             rhs2=-cour*(f2(i+1)-f2(i)-d2(i+1)+d2(i))+dt(i)*grav*(ci2(i)+aso(i))
             c11=g11inv(i)*b11(i+1)+g12inv(i)*b21(i+1)
             c12=g11inv(i)*b12(i+1)+g12inv(i)*b22(i+1)
@@ -283,10 +377,8 @@ program mesh
 
 !           Now calculate y based on area calculated
 !-------------------------------------
-            do pp=1,nel
-                elevTable(pp) = xsec_tab(1,pp,i)
-                areaTable(pp) = xsec_tab(2,pp,i)
-            enddo
+            elevTable(:) = xsec_tab(1,:,i)
+            areaTable(:) = xsec_tab(2,:,i)
 
     !       interpolate the cross section attributes based on FINAL CALCULATED area
             xt=newArea(i)
@@ -308,12 +400,18 @@ program mesh
 
         t = t + dtini
         print "('- cycle',i9,'  completed')", n
+        !print*, 'dqp', (dqp(i), i=1, ncomp)
+        !print*, 'dqc', (dqc(i), i=1, ncomp)
+        !print*, 'qp', (qp(i), i=1, ncomp)
+        !print*, 'oldQ', (oldQ(i), i=1, ncomp)
+        !print*, 'newQ', (newQ(i), i=1, ncomp)
 
         if (mod(n,saveFrequency) .eq. 0) then
         write(8, 10) t, (newY(i), i=1,ncomp)
         write(9, 10) t, (newQ(i), i=1,ncomp)
         write(51, 10) t, (newArea(i), i=1, ncomp)
         end if
+        !  if (n .eq. 8000) pause
 
         !write(81, *) t, newArea(ncomp)
 
@@ -339,8 +437,8 @@ program mesh
     print*, 'Maximum Courant no', maxCourant
 
     !
-10  format(f12.2 , <ncomp>f12.2)
-!10  format(f12.2 , 1000f12.2)
+!10  format(f12.2 , <ncomp>f12.2)
+10  format(f12.2 , 1200f12.2)
 
     call cpu_time( t2 )
     print '("Time = ",f10.3," seconds.")',t2 - t1

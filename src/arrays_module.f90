@@ -3,7 +3,7 @@ module arrays_module
     implicit none
     save
 
-    real(kind=4), allocatable :: area(:), bo(:)
+    real(kind=4), allocatable :: area(:), bo(:) !, y(:, :), q(:, :)
     real(kind=4), allocatable :: areap(:), qp(:), z(:), dqp(:)
     real(kind=4), allocatable :: av11(:), av12(:), av21(:), av22(:)
     real(kind=4), allocatable :: dqc(:), dap(:), dac(:), ci1(:), ci2(:)
@@ -20,18 +20,20 @@ module arrays_module
 
     real(kind=4), allocatable :: oldQ(:), newQ(:), oldArea(:), newArea(:), oldY(:), newY(:)
 
-    integer, allocatable :: ityp(:)
+    integer, allocatable :: ityp(:), latFlowLocations(:), dataInEachLatFlow(:), latFlowType(:), latFlowXsecs(:)
+
+    real(kind=4), allocatable :: lateralFlowTable(:,:,:), lateralFlow(:)
 
 contains
 
     ! Allocate storage for all of the arrays in this module based on the number
     ! of time steps and spatial points
-    subroutine setup_arrays(num_time, num_points, maxTableEntry1, maxTableEntry2)
+    subroutine setup_arrays(num_time, num_points, maxTableEntry1, maxTableEntry2, totalLatFlow)
 
         implicit none
 
         ! Input
-        integer, intent(in) :: num_time, num_points, maxTableEntry1, maxTableEntry2
+        integer, intent(in) :: num_time, num_points, maxTableEntry1, maxTableEntry2, totalLatFlow
 
         allocate(area(num_points))
 
@@ -96,6 +98,10 @@ contains
         allocate(newArea(num_points))
         allocate(oldY(num_points))
         allocate(newY(num_points))
+
+        allocate(lateralFlowTable(2, maxTableEntry2, totalLatFlow))
+        allocate(dataInEachLatFlow(totalLatFlow))
+        allocate(lateralFlow(num_points))
 
     end subroutine setup_arrays
 
