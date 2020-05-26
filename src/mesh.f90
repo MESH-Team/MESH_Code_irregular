@@ -15,14 +15,16 @@ program mesh
     implicit none
 
     ! Local storage
-    integer(kind=4) :: i, j, n, ntim, igate, pp, boundaryFileMaxEntry, ppp, qqq, saveFrequency, noLatFlow !, areanew
+    integer(kind=4) :: i, j, n, ntim, igate, pp, boundaryFileMaxEntry, ppp, qqq, saveFrequency, noLatFlow, noQSKtable
     real(kind=4) :: cour, da, dq, dxini, yy, x, thetas, thesinv, tfin
-    real(kind=4) :: t, skk, qq, qn, xt, r_interpol, t1, t2, maxCourant
-    real(kind=4) :: arean, areac, hyrdn, hyrdc, perimn, perimc, qcrit, s0ds, timesDepth !, latFlowValue
+    real(kind=4) :: skk, qq, qn, xt, r_interpol, t1, t2, maxCourant
+    real(kind=4) :: arean, areac, hyrdn, hyrdc, perimn, perimc, qcrit, s0ds, timesDepth, latFlowValue
+
+    real(kind=8) :: t, r_interpol_type8
 
     character(len=128) :: upstream_path , downstream_path
-    character(len=128) :: bed_elevation_path, output_path, other_input
-    character(len=128) :: channel_width_path, lateralFlow_path
+    character(len=128) :: manning_strickler_path, output_path, other_input
+    character(len=128) :: QSKtablePath, lateralFlow_path
     character(len=128) :: path
 
     ! open file for input data
@@ -30,7 +32,11 @@ program mesh
 
     call cpu_time( t1 )
 
-    open(unit=1,file="../lower_Mississippi/input/input_BR_2_HOP_2016.txt",status='unknown')
+    !open(unit=1,file="../lower_Mississippi/input/input_BR_2_BC_2009.txt",status='unknown')
+    !open(unit=1,file="../lower_Mississippi/input/input_BR_2_BC_2009.txt",status='unknown')
+    !open(unit=1,file="../lateralFlow_test/input/input_dynamic_lateralFlow.txt",status='unknown')
+    !open(unit=1,file="../Mississippi_River_11_years_20200511/input/input_Mississippi_BR2SWP_dynamic.txt",status='unknown')
+    open(unit=1,file="../Vermelion_River/input/input_Vermelion_dynamic_20200526.txt",status='unknown')
 
     print*, 'Reading input file'
 
@@ -60,10 +66,10 @@ program mesh
     read(1,*) qn
     read(1,*) igate
     read(1,*) xSection_path
-    read(1,*) bed_elevation_path
+    read(1,*) manning_strickler_path
     read(1,*) upstream_path
     read(1,*) downstream_path
-    read(1,*) channel_width_path
+    read(1,*) QSKtablePath
     read(1,*) dx_path
     read(1,*) lateralFlow_path
     read(1,*) output_path
@@ -101,30 +107,47 @@ program mesh
 
     read(1,*) (latFlowXsecs(i), i=1, noLatFlow)
 
+    read(1,*) noQSKtable
+
+    !allocate(QSKTableData(2,boundaryFileMaxEntry,noQSKtable))   ! all the first nodes where a lateral flow starts
+    allocate(eachQSKtableNodeRange(2,noQSKtable))        ! Lateral flow type: Type = 1 = time series; Type 2 = flow as a function of upstream flow
+
+    read(1,*) (eachQSKtableNodeRange(1,i), i=1, noQSKtable)
+    read(1,*) (eachQSKtableNodeRange(2,i), i=1, noQSKtable)
+
+    !!! Need to test so that one section does not corresponds to more than one table
+    do i = 2, noQSKtable
+        if ( eachQSKtableNodeRange(2,i-1) .ge. eachQSKtableNodeRange(1,i) ) then
+            print*, 'Wrong range of nodes applied for Q-Sk table.'
+            print*, 'Lower limit of Table ', i-1,'must be smaller than the upper limit of Table ', i
+            stop
+        end if
+    end do
+
     close (1)
 
     ! Allocate arrays
-    call setup_arrays(ntim, ncomp, maxTableLength, boundaryFileMaxEntry, noLatFlow)
+    call setup_arrays(ntim, ncomp, maxTableLength, boundaryFileMaxEntry, noLatFlow, noQSKtable)
     call setup_arrays_section
     call setup_xsec_attribute_module(nel, ncomp)
 
     dt = dtini
 
-    open(unit=90, file=trim(dx_path))
+    open(unit=90, file=trim(dx_path), status='unknown')
     do i=1,ncomp-1
         read(90, *) x, dx(i)
     end do
     close(90)
 
     ! reading Strickler's coefficient at each section
-    open(unit=85,file=trim(other_input)//'Mannings_Stricklers_coeff_1153Nodes.txt', status='unknown')
+    open(unit=85,file=trim(manning_strickler_path), status='unknown') !! //'Mannings_Stricklers_coeff.txt', status='unknown')
     do i=1,ncomp
         read(85, *) x, sk(i)
         call readXsection(i,(1.0/sk(i)),timesDepth)
         ! This subroutine creates attribute table for each cross sections and saves in the hdd
         ! setting initial condition
         !y(1,i) = yy ! + z(i)
-        oldY(i) = yy ! + z(i)
+        oldY(i) = yy !+ z(i)
     end do
     close(85)
 
@@ -139,7 +162,7 @@ program mesh
     !open(unit=91,file=trim(output_path)//'initialCondition.txt', status='unknown')
     ! read(91, *)
     !do i=1,ncomp
-    !    read(91, *) oldQ(i), oldY(i)
+    !    read(91, *) oldQ(i), oldY(i), oldArea(i)
     !end do
     !close(91)
 
@@ -148,12 +171,15 @@ program mesh
 
 
     ! reading Q-Strickler's coefficient multiplier table
-    open(unit=86,file=trim(other_input)//'Q_Mannings_table.txt', status='unknown')
-    do i=1,maxTableLength
-        read(86,*,end=300)Q_Sk_Table(1,i), Q_Sk_Table(2,i)
-    enddo
-300 close(86)
-	Q_sk_tableEntry = i-1
+    do i=1,noQSKtable
+        write(file_num,'(i4.4)')i
+        open(86,file=trim(QSKtablePath)//'Q_Mannings_table_'//file_num//'.txt')
+        do n=1,maxTableLength
+            read(86,*,end=300) Q_Sk_Table(1, n, i), Q_Sk_Table(2, n, i)
+        end do
+300     close(86)
+        Q_sk_tableEntry(i) = n-1
+    end do
 
 
     x = 0.0
@@ -174,13 +200,17 @@ program mesh
 302 close(88)
     qqq = n-1
 
-    t = 0.0
+    t = 0.0 !800000.0
+    !t = 1468800.0
+    !t = 400000.0
+    !t = 2764800
+    !t = 7984800.0 !0.0  ! t end = 16624800
 
     ! applying boundary
     ! interpolation of boundaries at the initial time step
 
-    oldQ(1)    =r_interpol(USBoundary(1, :),USBoundary(2, :),ppp,t)
-    oldY(ncomp)=r_interpol(DSBoundary(1, :),DSBoundary(2, :),qqq,t)
+    oldQ(1)    =r_interpol_type8(USBoundary(1, 1:ppp),USBoundary(2, 1:ppp),ppp,t)
+    oldY(ncomp)=r_interpol_type8(DSBoundary(1, 1:qqq),DSBoundary(2, 1:qqq),qqq,t)
 
     ! DS Boundary treatment: from water level to area time series
     ncompElevTable = xsec_tab(1,:,ncomp)
@@ -218,47 +248,69 @@ program mesh
     write(8, 10)  t, (oldY(i), i=1,ncomp)
     write(9, 10)  t, (oldQ(i), i=1, ncomp)
     write(51, 10) t, (oldArea(i), i=1, ncomp)
-
     !
     ! Loop on time
     !
     do n=1, ntim-1
 
         ! interpolation of boundaries at the desired time step
-        newQ(1)     =r_interpol(USBoundary(1, :),USBoundary(2, :),ppp,t+dtini)
-        newY(ncomp) =r_interpol(DSBoundary(1, :),DSBoundary(2, :),qqq,t+dtini)
-
+        newQ(1)     =r_interpol_type8(USBoundary(1, 1:ppp),USBoundary(2, 1:ppp),ppp,t+dtini)
+        newY(ncomp) =r_interpol_type8(DSBoundary(1, 1:qqq),DSBoundary(2, 1:qqq),qqq,t+dtini)
         xt=newY(ncomp)
 		newArea(ncomp)=r_interpol(ncompElevTable,ncompAreaTable,nel,xt)
 
+
+
+
+
 		! applying lateral flow at the oldQ
-		lateralFlow = 0
+!		lateralFlow = 0
+!        do i=1,noLatFlow
+!            if (latFlowType(i) .eq. 1) then
+!                lateralFlow(latFlowLocations(i)) = r_interpol(lateralFlowTable(1, :, i), &
+!                    lateralFlowTable(2, :, i),dataInEachLatFlow(i),t)
+!            elseif (latFlowType(i) .eq. 2) then
+!                lateralFlow(latFlowLocations(i)) = r_interpol(lateralFlowTable(1, :, i), &
+!                    lateralFlowTable(2, :, i),dataInEachLatFlow(i),oldQ(latFlowLocations(i)))
+!            endif
+!            lateralFlow(latFlowLocations(i)) = lateralFlow(latFlowLocations(i))/ &
+!                    sum(dx(latFlowLocations(i):latFlowLocations(i)+latFlowXsecs(i)-1))
+!
+!            do j=1,latFlowXsecs(i)-1
+!                lateralFlow(latFlowLocations(i)+j)=lateralFlow(latFlowLocations(i))
+!            end do
+!        end do
+
+
+        ! new approach to add multiple lateral flow to the same node
+        lateralFlow = 0
         do i=1,noLatFlow
             if (latFlowType(i) .eq. 1) then
-                lateralFlow(latFlowLocations(i)) = r_interpol(lateralFlowTable(1, :, i), &
-                    lateralFlowTable(2, :, i),dataInEachLatFlow(i),t)
+                latFlowValue = r_interpol_type8(lateralFlowTable(1, 1:dataInEachLatFlow(i), i), &
+                    lateralFlowTable(2, 1:dataInEachLatFlow(i), i),dataInEachLatFlow(i),t)
             elseif (latFlowType(i) .eq. 2) then
-                lateralFlow(latFlowLocations(i)) = r_interpol(lateralFlowTable(1, :, i), &
-                    lateralFlowTable(2, :, i),dataInEachLatFlow(i),oldQ(latFlowLocations(i)))
+                latFlowValue = r_interpol(lateralFlowTable(1, 1:dataInEachLatFlow(i), i), &
+                    lateralFlowTable(2, 1:dataInEachLatFlow(i), i),dataInEachLatFlow(i),oldQ(latFlowLocations(i)-1))
             endif
-                lateralFlow(latFlowLocations(i)) = lateralFlow(latFlowLocations(i))/ &
-                    sum(dx(latFlowLocations(i):latFlowLocations(i)+latFlowXsecs(i)-1))
+            latFlowValue = latFlowValue / &
+                    !sum(dx(latFlowLocations(i):latFlowLocations(i)+latFlowXsecs(i)-1))          !!! check this line
+                    sum(dx(latFlowLocations(i)-1:latFlowLocations(i)-1+latFlowXsecs(i)-1))
 
-            do j=1,latFlowXsecs(i)-1
-                lateralFlow(latFlowLocations(i)+j)=lateralFlow(latFlowLocations(i))
+            do j=1,latFlowXsecs(i)
+                lateralFlow(latFlowLocations(i)+j-1)=lateralFlow(latFlowLocations(i)+j-1) + latFlowValue
             end do
-            !print*, 'lat flow=', latFlowValue, latFlowLocations(i), &
-            !    latFlowValue*(dx(latFlowLocations(i)-1)+dx(latFlowLocations(i)))*0.5, &
-            !    oldQ(latFlowLocations(i))
-            ! print*, 'lat flow at', latFlowLocations(i), &
-            !    'flow=',lateralFlow(latFlowLocations(i))*0.5*(dx(latFlowLocations(i)-1)+dx(latFlowLocations(i))), &
-            !    dx(latFlowLocations(i)-1), dx(latFlowLocations(i))
+
         end do
+
+
+
+
         !print*, 'noLatFlow',noLatFlow
         !print*, 'lateralFlow', (lateralFlow(i), i=1, ncomp)
 
         ! Set upstream discharge
         dqp(1) = newQ(1) - oldQ(1)
+        dap(1) = 0.0
 
         call section()
         ! Nazmul: The subroutine calls the attribute tables and interpolate according to the available water level
@@ -269,8 +321,9 @@ program mesh
         do i=2,ncomp
             !cour=dt(i)/dx(i-1)
             cour=dtini/dx(i-1)
-            rhs1=-cour*(f1(i)-f1(i-1)-d1(i)+d1(i-1))+lateralFlow(i)*dtini*dx(i)/dx(i-1)
-            rhs2=-cour*(f2(i)-f2(i-1)-d2(i)+d2(i-1))+dt(i)*grav*(ci2(i)+aso(i))
+            !rhs1=-cour*(f1(i)-f1(i-1)-d1(i)+d1(i-1))+lateralFlow(i-1)*dtini !*dx(i)/dx(i-1)
+            rhs1=-cour*(f1(i)-f1(i-1)-d1(i)+d1(i-1))+lateralFlow(i)*dtini !*dx(i)/dx(i-1)
+            rhs2=-cour*(f2(i)-f2(i-1)-d2(i)+d2(i-1))+dtini*grav*(ci2(i)+aso(i))
             c11=g11inv(i)*b11(i-1)+g12inv(i)*b21(i-1)
             c12=g11inv(i)*b12(i-1)+g12inv(i)*b22(i-1)
             c21=g21inv(i)*b11(i-1)+g22inv(i)*b21(i-1)
@@ -351,7 +404,8 @@ program mesh
         do i=ncomp-1,1,-1
             !cour=dt(i)/dx(i)
             cour=dtini/dx(i)
-            rhs1=-cour*(f1(i+1)-f1(i)-d1(i+1)+d1(i))+lateralFlow(i)*dtini*dx(i)/dx(i)
+            !rhs1=-cour*(f1(i+1)-f1(i)-d1(i+1)+d1(i))+lateralFlow(i)*dtini
+            rhs1=-cour*(f1(i+1)-f1(i)-d1(i+1)+d1(i))+lateralFlow(i+1)*dtini
             rhs2=-cour*(f2(i+1)-f2(i)-d2(i+1)+d2(i))+dt(i)*grav*(ci2(i)+aso(i))
             c11=g11inv(i)*b11(i+1)+g12inv(i)*b21(i+1)
             c12=g11inv(i)*b12(i+1)+g12inv(i)*b22(i+1)
@@ -420,6 +474,9 @@ program mesh
         oldQ   = newQ
         oldArea= newArea
 
+        !!! test
+        !if (t .gt. 50000) dtini = 103
+        !!! test end
     end do
     ! End of time loop
 
@@ -438,7 +495,7 @@ program mesh
 
     !
 !10  format(f12.2 , <ncomp>f12.2)
-10  format(f12.2 , 1200f12.2)
+10  format(f12.2 , 1200f13.3)
 
     call cpu_time( t2 )
     print '("Time = ",f10.3," seconds.")',t2 - t1
