@@ -12,28 +12,34 @@ module arrays_module
     real(kind=4), allocatable :: b11(:), b12(:), b21(:), b22(:)
     real(kind=4), allocatable :: eps2(:), eps4(:), d1(:), d2(:), u(:), c(:)
     real(kind=4), allocatable :: sk(:), co(:), gso(:), dbdx(:)
-    real(kind=4), allocatable :: dt(:), dx(:), froud(:), courant(:)
+    real(kind=4), allocatable :: dx(:), froud(:), courant(:)
+    real(kind=8), allocatable :: dt(:)
 
-    real(kind=4), allocatable :: USBoundary(:,:), DSBoundary(:,:), Q_Sk_Table(:,:)
+
+    real(kind=4), allocatable :: USBoundary(:,:), DSBoundary(:,:)
 ! change for unsteady flow
     real(kind=4), allocatable :: pere(:),dpda(:)
 
     real(kind=4), allocatable :: oldQ(:), newQ(:), oldArea(:), newArea(:), oldY(:), newY(:)
 
     integer, allocatable :: ityp(:), latFlowLocations(:), dataInEachLatFlow(:), latFlowType(:), latFlowXsecs(:)
-
     real(kind=4), allocatable :: lateralFlowTable(:,:,:), lateralFlow(:)
+
+
+    integer, allocatable :: Q_sk_tableEntry(:)
+    real(kind=4), allocatable :: eachQSKtableNodeRange(:,:), Q_Sk_Table(:,:,:)
+
 
 contains
 
     ! Allocate storage for all of the arrays in this module based on the number
     ! of time steps and spatial points
-    subroutine setup_arrays(num_time, num_points, maxTableEntry1, maxTableEntry2, totalLatFlow)
+    subroutine setup_arrays(num_time, num_points, maxTableEntry1, maxTableEntry2, totalLatFlow, totalQSKtable)
 
         implicit none
 
         ! Input
-        integer, intent(in) :: num_time, num_points, maxTableEntry1, maxTableEntry2, totalLatFlow
+        integer, intent(in) :: num_time, num_points, maxTableEntry1, maxTableEntry2, totalLatFlow, totalQSKtable
 
         allocate(area(num_points))
 
@@ -86,7 +92,11 @@ contains
 
         allocate(froud(num_points))
 
-        allocate(Q_Sk_Table(2, maxTableEntry1))
+
+        allocate(Q_Sk_Table(2, maxTableEntry1, totalQSKtable))
+        allocate(Q_sk_tableEntry(totalQSKtable))
+
+
         allocate(USBoundary(2, maxTableEntry2))
         allocate(DSBoundary(2, maxTableEntry2))
 
@@ -102,6 +112,8 @@ contains
         allocate(lateralFlowTable(2, maxTableEntry2, totalLatFlow))
         allocate(dataInEachLatFlow(totalLatFlow))
         allocate(lateralFlow(num_points))
+
+
 
     end subroutine setup_arrays
 
