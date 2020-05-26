@@ -5,6 +5,7 @@ module var_module
 
     integer :: ncomp, ots, option_dsbc
     real(kind=4) :: cfl, qus, f, yds, rhs1, rhs2, c11, c12, c21, c22, us, thes
-    real(kind=4) :: vv, dtini
+    real(kind=4) :: vv
+    real(kind=8) :: dtini
 
 end module var_module
