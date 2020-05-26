@@ -9,7 +9,7 @@ subroutine secpred()
     implicit none
 
     ! Locals
-    integer :: i, pp
+    integer :: i, pp, tableLength
     real(kind=4) :: beds, fs, hy, yyn, yyn_1, temp1, temp2, new_I2
     real(kind=4) :: xt, q_sk_multi, currentQ
     real(kind=4) :: r_interpol, r_interpo_nn
@@ -64,7 +64,14 @@ subroutine secpred()
         dpda(i)=r_interpol(elevTable,dPdATable,nel,xt)
 
         currentQ = qp(i)
-        q_sk_multi = r_interpo_nn(Q_Sk_Table(1,:),Q_Sk_Table(2,:),Q_sk_tableEntry,currentQ)
+
+        q_sk_multi = 1.0
+        do pp = 1, size(Q_sk_tableEntry)
+            if (  ( eachQSKtableNodeRange(1,pp) - i) * ( eachQSKtableNodeRange(2,pp) - i) .le. 0 ) then
+				tableLength = Q_sk_tableEntry(pp)
+                q_sk_multi = r_interpo_nn(Q_Sk_Table(1,1:tableLength,pp),Q_Sk_Table(2,1:tableLength,pp),tableLength,currentQ)
+            end if
+        end do
         co(i) = q_sk_multi*co(i)
 
 ! ----------------------------------------------------
@@ -86,6 +93,14 @@ subroutine secpred()
                 dbdx(i)=(bo(i+1)-bo(i))/dx(i)
             end if
         end if
+
+        !!! new for dkdh
+        do pp = 2,nel
+            if (yyn .le. elevTable(pp)) then
+                dkdh(i)  =(convTable(pp)-convTable(pp-1))/(elevTable(pp)-elevTable(pp-1))
+                EXIT
+            endif
+        end do
     end do
 
 end subroutine secpred

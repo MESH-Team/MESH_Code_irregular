@@ -10,7 +10,7 @@ subroutine section()
 
     ! Locals
     !integer, intent(in) :: n
-    integer :: i, pp
+    integer :: i, pp, tableLength
     real(kind=4) :: beds, fs, hy, yyn, yyn_1, temp1, temp2, new_I2
     real(kind=4) :: xt, q_sk_multi, currentQ
     real(kind=4) :: r_interpol, r_interpo_nn
@@ -55,7 +55,14 @@ subroutine section()
         dpda(i)=r_interpol(elevTable,dPdATable,nel,xt)
 
         currentQ = oldQ(i)
-        q_sk_multi = r_interpo_nn(Q_Sk_Table(1,:),Q_Sk_Table(2,:),Q_sk_tableEntry,currentQ)
+
+        q_sk_multi = 1.0
+        do pp = 1, size(Q_sk_tableEntry)
+            if (  ( eachQSKtableNodeRange(1,pp) - i) * ( eachQSKtableNodeRange(2,pp) - i) .le. 0 ) then
+				tableLength = Q_sk_tableEntry(pp)
+                q_sk_multi = r_interpo_nn(Q_Sk_Table(1,1:tableLength,pp),Q_Sk_Table(2,1:tableLength,pp),tableLength,currentQ)
+            end if
+        end do
         co(i) = q_sk_multi*co(i)
 
 
@@ -79,7 +86,19 @@ subroutine section()
                  dbdx(i)=(bo(i)-bo(i-1))/dx(i-1)
             end if
         end if
+
+        !!! new for dkdh
+        do pp = 2,nel
+            if (oldY(i) .le. elevTable(pp)) then
+                dkdh(i)  =(convTable(pp)-convTable(pp-1))/(elevTable(pp)-elevTable(pp-1))
+                EXIT
+            endif
+        end do
     end do
+
+
+
+
 
 end subroutine section
 
@@ -104,10 +123,40 @@ function r_interpol(x,y,jj,xt)
         print*, 'x', (x(i), i=1, jj)
         print*, 'y', (y(i), i=1, jj)
         stop
-        if (xt.le. minval(x)) yt=minval(y)
-        if (xt.ge. maxval(x)) yt=maxval(y)
+        !if (xt.le. minval(x)) yt=minval(y)
+        !if (xt.ge. maxval(x)) yt=maxval(y)
     end if
     r_interpol = yt
     return
 end function
 
+function r_interpol_type8(x,y,jj,xt)
+
+    integer(kind=4), intent(in) :: jj
+    real(kind=4), intent(in) :: x(jj), y(jj)
+    real(kind=8), intent(in) :: xt
+
+
+
+    if (xt.lt.maxval(x) .and. xt.ge.minval(x)) then
+        do j=1,jj-1
+            if((x(j)-xt)*(x(j+1)-xt).le.0)then
+
+                yt=(xt-x(j))/(x(j+1)-x(j))*(y(j+1)-y(j))+y(j)
+
+                EXIT
+            endif
+        end do
+    else
+        print*, xt, ' is not within the limit'
+        print*, 'maxval(x)= ', maxval(x), 'and minval(x)=', minval(x),'so',  xt, ' is not within the limit'
+        print*, 'jj', jj
+        print*, 'x', (x(i), i=1, jj)
+        print*, 'y', (y(i), i=1, jj)
+        stop
+        !if (xt.le. minval(x)) yt=minval(y)
+        !if (xt.ge. maxval(x)) yt=maxval(y)
+    end if
+    r_interpol_type8 = yt
+    return
+end function
