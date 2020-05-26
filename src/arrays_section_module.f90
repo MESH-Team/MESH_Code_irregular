@@ -13,7 +13,7 @@ module arrays_section_module
     real(kind=4), allocatable :: upstreamI2Tablec(:), downstreamI2Tablep(:)
     real(kind=4), allocatable :: currentSquareDepth(:), downstreamSquareDepth(:), upstreamSquareDepth(:)
 
-    integer :: maxTableLength, nel, Q_sk_tableEntry
+    integer :: maxTableLength, nel
 
     character*4 :: file_num
     character(len=128) :: xSection_path
@@ -35,7 +35,6 @@ contains
 
 		allocate(ncompElevTable(nel))
         allocate(ncompAreaTable(nel))
-
 ! only in version 2 20151115
         allocate(I2Tablep(nel))
         allocate(I2Tablec(nel))
