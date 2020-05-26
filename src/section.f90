@@ -88,12 +88,12 @@ subroutine section()
         end if
 
         !!! new for dkdh
-        do pp = 2,nel
-            if (oldY(i) .le. elevTable(pp)) then
-                dkdh(i)  =(convTable(pp)-convTable(pp-1))/(elevTable(pp)-elevTable(pp-1))
-                EXIT
-            endif
-        end do
+ !       do pp = 2,nel
+ !           if (oldY(i) .le. elevTable(pp)) then
+ !               dkdh(i)  =(convTable(pp)-convTable(pp-1))/(elevTable(pp)-elevTable(pp-1))
+ !               EXIT
+ !           endif
+ !       end do
     end do
 
 
