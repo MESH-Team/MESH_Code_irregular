@@ -19,6 +19,7 @@ subroutine matrixp()
         ! Nazmul: TODO, check if this equation is good for natural channel
         c(i)=sqrt(grav*area(i)/bo(i))
 
+        !print*, sqrt(grav*area(i)/bo(i)), sqrt(grav*(depth(i)))
 
         ! This is the matrix L (left eigenvector matrix - eq 13)
         e(1,1)=1.0
@@ -62,11 +63,14 @@ subroutine matrixp()
 
         ! Matrix S (eq 14)
         st(1, 1)=0.0
-        st(1, 2)=0.0
+        st(1, 2)=0.0 !CHANGE
+        !st(1, 2)=1.0
         st(2, 1)=grav*area(i)/bo(i)/bo(i)*dbdx(i)+gso(i)      &
                 +f*2.0*grav*area(i)*oldQ(i)*abs(oldQ(i))/co(i)**3.0*dkda
+                !+f*2.0*grav*area(i)*q(n,i)*abs(q(n,i))/co(i)**3.0*dkda
 
         !Nazmul: st(2,2) term is multiplied with a gravity
+        !st(2,2)=-2*f*q(n,i)*grav*area(i)/co(i)/co(i)
         st(2,2)=-2*f*oldQ(i)*grav*area(i)/co(i)/co(i)
 
 
@@ -106,6 +110,7 @@ subroutine matrixp()
         !f1(i)=q(n,i)
         f1(i)=oldQ(i)
         !print *, ncomp, i, area(i)
+        !f2(i)=q(n,i)*q(n,i)/area(i)+grav*ci1(i)
         f2(i)=oldQ(i)*oldQ(i)/area(i)+grav*ci1(i)
 
         if(i >= 2 .and. i < ncomp) then
@@ -165,9 +170,12 @@ subroutine matrixp()
             d2(i)=0.0
         elseif(i.eq.2.or.i.eq.(ncomp-1)) then
             d1(i)=eps2(i)*eia*(area(i+1)-area(i))
+            !d2(i)=eps2(i)*eia*(q(n,i+1)-q(n,i))
             d2(i)=eps2(i)*eia*(oldQ(i+1)-oldQ(i))
+            ! print *, i,d1(i),d2(i),eps2(i),area(i+1),area(i)
         else
             d1(i)=eps2(i)*eia*(area(i+1)-area(i))-eps4(i)*(area(i+2)-3*area(i+1)+3*area(i)-area(i-1))
+            !d2(i)=eps2(i)*eia*(q(n,i+1)-q(n,i))-eps4(i)*(q(n,i+2)-3*q(n,i+1)+3*q(n,i)-q(n,i-1))
             d2(i)=eps2(i)*eia*(oldQ(i+1)-oldQ(i))-eps4(i)*(oldQ(i+2)-3*oldQ(i+1)+3*oldQ(i)-oldQ(i-1))
         endif
         ! print *, i,d1(i),d2(i),eps2(i),area(i+1),area(i)
