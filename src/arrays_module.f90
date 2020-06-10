@@ -13,7 +13,7 @@ module arrays_module
     real(kind=4), allocatable :: eps2(:), eps4(:), d1(:), d2(:), u(:), c(:)
     real(kind=4), allocatable :: sk(:), co(:), gso(:), dbdx(:)
     real(kind=4), allocatable :: dx(:), froud(:), courant(:)
-    real(kind=8), allocatable :: dt(:)
+    real(kind=4), allocatable :: dt(:)
 
 
     real(kind=4), allocatable :: USBoundary(:,:), DSBoundary(:,:)
