@@ -53,7 +53,8 @@ subroutine matrixc()
 
         ! Matrix S (eq 14)
         st(1, 1)=0.0
-        st(1, 2)=0.0
+        st(1, 2)=0.0 !CHANGE
+        !st(1, 2)=1.0
         st(2, 1)=grav*areap(i)/bo(i)/bo(i)*dbdx(i)+gso(i)      &
                 +f*2.0*grav*areap(i)*qp(i)*abs(qp(i))/co(i)**3.0*dkda
         !Nazmul: st(2,2) term is multiplied with a gravity
