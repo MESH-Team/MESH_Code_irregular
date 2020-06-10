@@ -130,12 +130,13 @@ function r_interpol(x,y,jj,xt)
     return
 end function
 
-function r_interpol_type8(x,y,jj,xt)
+function r_interpol_time(x,y,jj,xt)
 
     integer(kind=4), intent(in) :: jj
     real(kind=4), intent(in) :: x(jj), y(jj)
-    real(kind=8), intent(in) :: xt
-
+    real(kind=4), intent(in) :: xt
+    real(kind=4) :: yt
+    !real(kind=8), intent(out) :: r_interpol_time
 
 
     if (xt.lt.maxval(x) .and. xt.ge.minval(x)) then
@@ -157,6 +158,7 @@ function r_interpol_type8(x,y,jj,xt)
         !if (xt.le. minval(x)) yt=minval(y)
         !if (xt.ge. maxval(x)) yt=maxval(y)
     end if
-    r_interpol_type8 = yt
+    r_interpol_time = yt
+    ! print*,xt
     return
 end function
