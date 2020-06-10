@@ -15,12 +15,12 @@ program mesh
     implicit none
 
     ! Local storage
-    integer(kind=4) :: i, j, n, ntim, igate, pp, boundaryFileMaxEntry, ppp, qqq, saveFrequency, noLatFlow, noQSKtable
-    real(kind=4) :: cour, da, dq, dxini, yy, x, thetas, thesinv, tfin
-    real(kind=4) :: skk, qq, qn, xt, r_interpol, t1, t2, maxCourant
+    integer(kind=4) :: i, j, n, ntim, igate, pp, boundaryFileMaxEntry, ppp, qqq, noLatFlow, noQSKtable, saveFrequency
+    real(kind=4) :: cour, da, dq, dxini, yy, x, thetas, thesinv
+    real(kind=4) :: skk, qq, qn, xt, r_interpol, maxCourant
     real(kind=4) :: arean, areac, hyrdn, hyrdc, perimn, perimc, qcrit, s0ds, timesDepth, latFlowValue
 
-    real(kind=8) :: t, r_interpol_type8
+    real(kind=4) :: t, r_interpol_time, tfin, t1, t2, t0 !t0 start time
 
     character(len=128) :: upstream_path , downstream_path
     character(len=128) :: manning_strickler_path, output_path, other_input
@@ -35,17 +35,19 @@ program mesh
     !open(unit=1,file="../lower_Mississippi/input/input_BR_2_BC_2009.txt",status='unknown')
     !open(unit=1,file="../lower_Mississippi/input/input_BR_2_BC_2009.txt",status='unknown')
     !open(unit=1,file="../lateralFlow_test/input/input_dynamic_lateralFlow.txt",status='unknown')
-    !open(unit=1,file="../Mississippi_River_11_years_20200511/input/input_Mississippi_BR2SWP_dynamic.txt",status='unknown')
+    !open(unit=1,file="../Mississippi_River_11_years_20200511/input/input_Mississippi_BR2SWP_dynamic_new.txt",status='unknown')
     open(unit=1,file="../Vermelion_River/input/input_Vermelion_dynamic_20200526.txt",status='unknown')
 
     print*, 'Reading input file'
 
     ! read data
-    read(1,*) dtini
+    read(1,*) dtini     ! in seconds
     read(1,*) dxini
-    read(1,*) tfin
+    read(1,*) t0        ! in hours
+    read(1,*) tfin      ! in hours
+	ntim = floor( (tfin - t0) / dtini * 3600)
+	print*, ntim
     read(1,*) ncomp
-    read(1,*) ntim
     read(1,*) phi
     read(1,*) theta
     read(1,*) thetas
@@ -79,7 +81,7 @@ program mesh
     read(1,*) timesDepth
     read(1,*) other_input
     read(1,*) boundaryFileMaxEntry
-    read(1,*) saveFrequency
+    read(1,*) saveFrequency; saveFrequency = saveFrequency / dtini
     read(1,*) noLatFlow
 
     allocate(latFlowLocations(noLatFlow))   ! all the first nodes where a lateral flow starts
@@ -123,7 +125,6 @@ program mesh
             stop
         end if
     end do
-
     close (1)
 
     ! Allocate arrays
@@ -147,7 +148,7 @@ program mesh
         ! This subroutine creates attribute table for each cross sections and saves in the hdd
         ! setting initial condition
         !y(1,i) = yy ! + z(i)
-        oldY(i) = yy !+ z(i)
+        oldY(i) = yy ! + z(i)
     end do
     close(85)
 
@@ -187,7 +188,7 @@ program mesh
     ! Read hydrograph input Upstream
     open(unit=87, file=upstream_path)
     do n=1,boundaryFileMaxEntry
-        read(87,*,end=301) USBoundary(1, n), USBoundary(2, n)
+        read(87,*,end=301) USBoundary(1, n), USBoundary(2, n)       !! time column is in hours
     end do
 301 close(87)
     ppp = n-1
@@ -195,22 +196,19 @@ program mesh
     ! Read hydrograph input Downstream
     open(unit=88, file=downstream_path)
     do n=1,boundaryFileMaxEntry
-      read(88,*,end=302)  DSBoundary(1, n), DSBoundary(2, n)
+      read(88,*,end=302)  DSBoundary(1, n), DSBoundary(2, n)       !! time column is in hours
     end do
 302 close(88)
     qqq = n-1
 
-    t = 0.0 !800000.0
-    !t = 1468800.0
-    !t = 400000.0
-    !t = 2764800
-    !t = 7984800.0 !0.0  ! t end = 16624800
+    t=t0*60.0     !! t is in minute
 
     ! applying boundary
     ! interpolation of boundaries at the initial time step
-
-    oldQ(1)    =r_interpol_type8(USBoundary(1, 1:ppp),USBoundary(2, 1:ppp),ppp,t)
-    oldY(ncomp)=r_interpol_type8(DSBoundary(1, 1:qqq),DSBoundary(2, 1:qqq),qqq,t)
+    oldQ(1)    =r_interpol_time(USBoundary(1, 1:ppp),USBoundary(2, 1:ppp),ppp,t)
+    !print*, t, oldQ(1)
+    oldY(ncomp)=r_interpol_time(DSBoundary(1, 1:qqq),DSBoundary(2, 1:qqq),qqq,t)
+    !print*, t, oldY(ncomp)
 
     ! DS Boundary treatment: from water level to area time series
     ncompElevTable = xsec_tab(1,:,ncomp)
@@ -243,19 +241,29 @@ program mesh
     path = trim(output_path) // 'area.txt'
     open(unit=51, file=trim(path), status='unknown')
 
+    path = trim(output_path) // 'width.txt'
+    open(unit=91, file=trim(path), status='unknown')
+
+    path = trim(output_path) // 'r.txt'
+    open(unit=93, file=trim(path), status='unknown')
+
     ! Output initial condition
 
-    write(8, 10)  t, (oldY(i), i=1,ncomp)
-    write(9, 10)  t, (oldQ(i), i=1, ncomp)
-    write(51, 10) t, (oldArea(i), i=1, ncomp)
+    write(8, 10)  t*60.0, (oldY(i), i=1,ncomp)
+    write(9, 10)  t*60.0, (oldQ(i), i=1, ncomp)
+    write(51, 10) t*60.0, (oldArea(i), i=1, ncomp)
+    write(91, 10) t*60.0, (oldArea(i), i=1, ncomp)
+    write(93, 10) t*60.0, (oldArea(i), i=1, ncomp)
     !
     ! Loop on time
     !
-    do n=1, ntim-1
+    do n=0, ntim-1
 
         ! interpolation of boundaries at the desired time step
-        newQ(1)     =r_interpol_type8(USBoundary(1, 1:ppp),USBoundary(2, 1:ppp),ppp,t+dtini)
-        newY(ncomp) =r_interpol_type8(DSBoundary(1, 1:qqq),DSBoundary(2, 1:qqq),qqq,t+dtini)
+        newQ(1)     =r_interpol_time(USBoundary(1, 1:ppp),USBoundary(2, 1:ppp),ppp,t+dtini/60.)
+    !print*, t+dtini, newQ(1)
+        newY(ncomp) =r_interpol_time(DSBoundary(1, 1:qqq),DSBoundary(2, 1:qqq),qqq,t+dtini/60.)
+    !print*, t+dtini, newY(ncomp)
         xt=newY(ncomp)
 		newArea(ncomp)=r_interpol(ncompElevTable,ncompAreaTable,nel,xt)
 
@@ -263,31 +271,13 @@ program mesh
 
 
 
-		! applying lateral flow at the oldQ
-!		lateralFlow = 0
-!        do i=1,noLatFlow
-!            if (latFlowType(i) .eq. 1) then
-!                lateralFlow(latFlowLocations(i)) = r_interpol(lateralFlowTable(1, :, i), &
-!                    lateralFlowTable(2, :, i),dataInEachLatFlow(i),t)
-!            elseif (latFlowType(i) .eq. 2) then
-!                lateralFlow(latFlowLocations(i)) = r_interpol(lateralFlowTable(1, :, i), &
-!                    lateralFlowTable(2, :, i),dataInEachLatFlow(i),oldQ(latFlowLocations(i)))
-!            endif
-!            lateralFlow(latFlowLocations(i)) = lateralFlow(latFlowLocations(i))/ &
-!                    sum(dx(latFlowLocations(i):latFlowLocations(i)+latFlowXsecs(i)-1))
-!
-!            do j=1,latFlowXsecs(i)-1
-!                lateralFlow(latFlowLocations(i)+j)=lateralFlow(latFlowLocations(i))
-!            end do
-!        end do
-
-
-        ! new approach to add multiple lateral flow to the same node
+		! new approach to add multiple lateral flow to the same node
         lateralFlow = 0
         do i=1,noLatFlow
             if (latFlowType(i) .eq. 1) then
-                latFlowValue = r_interpol_type8(lateralFlowTable(1, 1:dataInEachLatFlow(i), i), &
+                latFlowValue = r_interpol_time(lateralFlowTable(1, 1:dataInEachLatFlow(i), i), &
                     lateralFlowTable(2, 1:dataInEachLatFlow(i), i),dataInEachLatFlow(i),t)
+                !print*, t, latFlowValue
             elseif (latFlowType(i) .eq. 2) then
                 latFlowValue = r_interpol(lateralFlowTable(1, 1:dataInEachLatFlow(i), i), &
                     lateralFlowTable(2, 1:dataInEachLatFlow(i), i),dataInEachLatFlow(i),oldQ(latFlowLocations(i)-1))
@@ -452,18 +442,23 @@ program mesh
             maxCourant = maxval (courant)
         endif
 
-        t = t + dtini
+        !t = t + dtini/60.
+        t = t0*60. + (n+1)*dtini/60.
         print "('- cycle',i9,'  completed')", n
+		!if(mod(n+1,24*saveFrequency) .eq. 0 .or. (n.eq.0))write(*,*)'Nstep =', n, 'Days = ', t/60./24., real(n+1)/real(ntim)*100., '% completed'
         !print*, 'dqp', (dqp(i), i=1, ncomp)
         !print*, 'dqc', (dqc(i), i=1, ncomp)
         !print*, 'qp', (qp(i), i=1, ncomp)
         !print*, 'oldQ', (oldQ(i), i=1, ncomp)
         !print*, 'newQ', (newQ(i), i=1, ncomp)
 
-        if (mod(n,saveFrequency) .eq. 0) then
-        write(8, 10) t, (newY(i), i=1,ncomp)
-        write(9, 10) t, (newQ(i), i=1,ncomp)
-        write(51, 10) t, (newArea(i), i=1, ncomp)
+        if (mod(n+1,saveFrequency) .eq. 0 .or. n .eq. (ntim-1)) then
+        write(8, 10) t*60., (newY(i), i=1,ncomp)
+        write(9, 10) t*60., (newQ(i), i=1,ncomp)
+        write(51, 10) t*60., (newArea(i), i=1, ncomp)
+
+        write(91, 10) t*60., (bo(i), i=1, ncomp)
+        write(93, 10) t*60., (pere(i), i=1, ncomp)
         end if
         !  if (n .eq. 8000) pause
 
@@ -483,6 +478,9 @@ program mesh
     close(8)
     close(9)
     close(51)
+
+    close(91)
+    close(93)
     !close(81)
 
     print*, 'dx', (dx(i), i=1, ncomp-1)
@@ -494,10 +492,10 @@ program mesh
     print*, 'Maximum Courant no', maxCourant
 
     !
-!10  format(f12.2 , <ncomp>f12.2)
+!10  format(f12.2 , <ncomp>f12.3)
 10  format(f12.2 , 1200f13.3)
 
     call cpu_time( t2 )
     print '("Time = ",f10.3," seconds.")',t2 - t1
-    pause 202
+    !pause 202
 end program mesh
