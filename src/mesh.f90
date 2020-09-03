@@ -16,7 +16,7 @@ program mesh
 
     ! Local storage
     integer(kind=4) :: i, j, n, ntim, igate, pp, boundaryFileMaxEntry, ppp, qqq, noLatFlow, noQSKtable, saveFrequency
-    real(kind=4) :: cour, da, dq, dxini, yy, x, thetas, thesinv
+    real(kind=4) :: cour, da, dq, dxini, yy, x, thetas, thesinv, saveInterval
     real(kind=4) :: skk, qq, qn, xt, r_interpol, maxCourant
     real(kind=4) :: arean, areac, hyrdn, hyrdc, perimn, perimc, qcrit, s0ds, timesDepth, latFlowValue
 
@@ -34,9 +34,9 @@ program mesh
 
     !open(unit=1,file="../lower_Mississippi/input/input_BR_2_BC_2009.txt",status='unknown')
     !open(unit=1,file="../lower_Mississippi/input/input_BR_2_BC_2009.txt",status='unknown')
-    !open(unit=1,file="../lateralFlow_test/input/input_dynamic_lateralFlow.txt",status='unknown')
+    open(unit=1,file="../lateralFlow_test/input/input_dynamic_lateralFlow.txt",status='unknown')
     !open(unit=1,file="../Mississippi_River_11_years_20200511/input/input_Mississippi_BR2SWP_dynamic_new.txt",status='unknown')
-    open(unit=1,file="../Vermelion_River/input/input_Vermelion_dynamic_20200526.txt",status='unknown')
+    !open(unit=1,file="../Vermelion_River/input/input_Vermelion_dynamic_20200526.txt",status='unknown')
 
     print*, 'Reading input file'
 
@@ -81,7 +81,7 @@ program mesh
     read(1,*) timesDepth
     read(1,*) other_input
     read(1,*) boundaryFileMaxEntry
-    read(1,*) saveFrequency; saveFrequency = saveFrequency / dtini
+    read(1,*) saveInterval; saveFrequency = saveFrequency / dtini
     read(1,*) noLatFlow
 
     allocate(latFlowLocations(noLatFlow))   ! all the first nodes where a lateral flow starts
@@ -257,7 +257,9 @@ program mesh
     !
     ! Loop on time
     !
-    do n=0, ntim-1
+    !do n=0, ntim-1
+    n=0
+    do while ( t .lt. tfin *60.)
 
         ! interpolation of boundaries at the desired time step
         newQ(1)     =r_interpol_time(USBoundary(1, 1:ppp),USBoundary(2, 1:ppp),ppp,t+dtini/60.)
@@ -444,6 +446,9 @@ program mesh
 
         !t = t + dtini/60.
         t = t0*60. + (n+1)*dtini/60.
+
+        n = n + 1
+
         print "('- cycle',i9,'  completed')", n
 		!if(mod(n+1,24*saveFrequency) .eq. 0 .or. (n.eq.0))write(*,*)'Nstep =', n, 'Days = ', t/60./24., real(n+1)/real(ntim)*100., '% completed'
         !print*, 'dqp', (dqp(i), i=1, ncomp)
@@ -452,7 +457,9 @@ program mesh
         !print*, 'oldQ', (oldQ(i), i=1, ncomp)
         !print*, 'newQ', (newQ(i), i=1, ncomp)
 
-        if (mod(n+1,saveFrequency) .eq. 0 .or. n .eq. (ntim-1)) then
+        !if (mod(n+1,saveFrequency) .eq. 0 .or. n .eq. (ntim-1)) then
+
+        if ( (mod( t-t0*60.  ,saveInterval/60. ) .eq. 0.0) .or. ( t .eq. tfin *60. ) ) then
         write(8, 10) t*60., (newY(i), i=1,ncomp)
         write(9, 10) t*60., (newQ(i), i=1,ncomp)
         write(51, 10) t*60., (newArea(i), i=1, ncomp)
