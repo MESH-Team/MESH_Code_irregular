@@ -1,0 +1,46 @@
+240 =: dtini         Time step dt (in seconds)
+20.0 =: dxini         Spatial step dx
+0 =: t0          starting time (in hours)
+96405 =: tfin          Final time (in hours) 
+280 =: ncomp         number of nodes // non interpolated dataset
+1.0 =: phi           source term treatment (0:explicit, 1:implicit) 
+1.0 =: theta         ?
+1.0 =: thetas        ?
+1.0 =: thesinv       ?
+0.0 =: alfa2         emp parameter for artificial diffusion (lit)
+0.0 =: alfa4         maximum value for artificial diffusion
+1.0 =: f             SI Units = 1
+40 =: skk           1/Manning's n roughness
+0.0 =: yy            water surface elevation (m)
+10000.0 =: qq            uniform flow condition (m3s-1) 13883.345
+1 =: cfl           courant number for optimal optimization of dt
+0 =: ots           optimize dt (1:apply opt, !=1:user specify)
+0.0 =: yw            weir height
+20.0 =: bw            weir width
+1.1 =: w             weir coefficient (unused)
+1 =: option        DS imposed condition (1:y, 2:q, 3:rating curve)
+0.1 =: yn            water level of DS end
+0.0085 =: qn            water discharge of DS end
+700 =: igate         spatial index of gate location (unused)
+..\Mississippi_River_11_years_20200511\BR_New_CS\BR_ =: xSection_path
+..\Mississippi_River_11_years_20200511\Mannings_Stricklers_coeff_280Nodes.txt =: Mannings-strickler's path 
+..\Mississippi_River_11_years_20200511\BR_dis_2009_2019.txt =: upstream_path  !! all times are in minutes
+..\Mississippi_River_11_years_20200511\EJ_wl_2009_2019.txt =: downstream_path  !! all times are in minutes
+..\Mississippi_River_11_years_20200511\Q_SK_Tables_diffusive\ =: Q-SK Table path
+..\Mississippi_River_11_years_20200511\dx.txt	=:	dx_path 
+..\Mississippi_River_11_years_20200511\lateral_in_min_diffusive\ =: lateralFlow_path      !! all times are in minutes
+..\Mississippi_River_11_years_20200511\output_Diffusive\ =: output_path
+0 =: option_dsbc         2 is drawdown to critical, 1 is normal, and 0 is constant water level downstream
+1000 =: maxTableLength         maximum number of data in each cross section file
+101 =: nel         number of line in each cross section attribute table
+2.0 =: timesDepth		multipliyer of depths that will be allowed to be flooded at a section
+..\Mississippi_River_11_years_20200511\ =: other input path
+5000 =: boundaryFileMaxEntry 	Max No of entry in the input boundary file
+86400 =: Result Saving frequency (in seconds)
+17 =: No of lateral flow inputs to the system  // 1 nodes required for Bonnet Carre : 469:480 ; Davis Pond: 524; Caernarvon: 697 
+128	139	179	196	211	240	250	252	256	258	261	265	267	269	271	274	276 =: all the first nodes where a lateral flow starts :: 469=Bonnet Carre; 864=Bohemia Spillway; 974=Fort St. Philip; 1014=Baptiste Collette; 1025=Grand Pass; 1042=West Bay; 1048=Cubits Gap and Overbank Flows; 1068=South Pass and Pass a Loutre; 1084=Southwest Pass; 1089=Joseph Bayou; 1138=Burrwood Bayou; 
+1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	=: Lateral flow type: Type = 1 = time series; Type 2 = flow as a function of upstream flow
+2	1	1	1	1	1	1	1	1	2	2	1	1	1	1	1	1	=: no of x-secs at the downstream that the lateral flow is applied
+3 =: No of Q-Sk multiplier table
+1	128	191		:= all the starting nodes under each table		1	128	191	
+127	190	280 	:= all the ending nodes under each table		127	190	280 
