@@ -76,45 +76,48 @@ contains
 !+ computation of normal depth in regular/trapezoidal x-section using
 !+ Newton-Raphson method. Refer to Appendix C-2, Chaudhary and p71,RM1_MESH
 !+++-------------------------------------------------------------------------------
-    subroutine normal_crit_y(j,ynm0, q_sk_multi, So, dsc, y_norm, y_crit, area_n, area_c)
+    !subroutine normal_crit_y(j,ynm0, q_sk_multi, So, dsc, y_norm, y_crit, area_n, area_c)
+    subroutine normal_crit_y(i, j, q_sk_multi, So, dsc, y_norm, y_crit, area_n, area_c)
 
 
         implicit none
 
-        integer, intent(in) :: j
-        real, intent(in) :: ynm0, q_sk_multi, So, dsc
+        integer, intent(in) :: i, j
+        real, intent(in) :: q_sk_multi, So, dsc
         real, intent(out) :: y_norm, y_crit, area_n, area_c
-        real :: area_0, width_0, errorY, hydR_0, r_interpol
+        real :: area_0, width_0, errorY, hydR_0, r_interpol!, fro
         integer :: trapnm_app, recnm_app, iter
 
 
-        !c1=manN*dsc/(c0*sqrt(So))
+            elevTable = xsec_tab(1,:,i,j)
+            areaTable = xsec_tab(2,:,i,j)
+            rediTable = xsec_tab(4,:,i,j)
+            topwTable = xsec_tab(6,:,i,j)
+            !print*, 'initial ara 0', oldY(i,j)
+            area_0 = r_interpol(elevTable,areaTable,nel,oldY(i,j)) ! initial estimate
+            width_0= r_interpol(elevTable,topwTable,nel,oldY(i,j)) ! initial estimate
 
-        y_norm=ynm0    !*initial estimate
+            !print*, 'initial ara 0', area_0
 
-            elevTable = xsec_tab(1,:,1,j)
-            areaTable = xsec_tab(2,:,1,j)
-            rediTable = xsec_tab(4,:,1,j)
-            topwTable = xsec_tab(6,:,1,j)
-            area_0 = r_interpol(elevTable,areaTable,nel,oldY(1,j))
-            width_0= r_interpol(elevTable,topwTable,nel,oldY(1,j))
-                !print*, 'nazmul j', j, oldY(1,j)
             area_c=area_0
             errorY = 100.
-            do while (errorY .gt. 0.0001)
-
+            !pause
+            do while (errorY .gt. 0.00001)
+                !print*, '11', area_0
                 hydR_0 = r_interpol(areaTable,rediTable,nel,area_0)
-                area_n = newQ(1,j)/sk(1,j)/q_sk_multi/ hydR_0 ** (2./3.) / sqrt(S_0)
+                !print*, '12', hydR_0
+                area_n = dsc/sk(i,j)/q_sk_multi/ hydR_0 ** (2./3.) / sqrt(So)
+                !print*, '13', dsc, area_n
 
-                errorY = abs(area_norm - area_0) / area_0
-                area_0 = area_norm
-                area_c = (newQ(1,j) * newQ(1,j) * width_0 / grav) ** (1./3.)
+                errorY = abs(area_n - area_0) / area_n
+                area_0 = area_n
+                !print*, 'area_0', area_n,'hydR_0', hydR_0
+                area_c = (dsc * dsc * width_0 / grav) ** (1./3.)
                 width_0  = r_interpol(areaTable,topwTable,nel,area_c)
-
+                !fro=abs(dsc)/sqrt(grav*area_c**3.0/width_0)
             enddo
-                !print*, 'nazmul j', j, oldY(1,j)
-            area_n = area_0
-            y_norm = r_interpol(areaTable,elevTable,nel,area_n)
+
+            y_norm = r_interpol(areaTable,elevTable,nel,area_0)
             y_crit = r_interpol(areaTable,elevTable,nel,area_c)
 
     end subroutine normal_crit_y

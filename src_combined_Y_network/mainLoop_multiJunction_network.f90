@@ -1,4 +1,3 @@
-NOT USED NOW
 !            FINITE DIFFERENCE METHOD
 !
 !  A program for one dimensional flow in open channel
@@ -17,7 +16,7 @@ program mesh
     implicit none
 
     ! Local storage
-    integer(kind=4) :: i, j, k, ppn, qqn, n, ntim, igate, pp, boundaryFileMaxEntry, saveFrequency, minNotSwitchRouting
+    integer(kind=4) :: i, j, k, ppn, qqn, n, ntim, igate, pp, boundaryFileMaxEntry, saveFrequency
     integer(kind=4) :: linknb_ds, linknb_us
     real(kind=4) :: qnp1_ds, qnp1_us, qsum, y_ds
 
@@ -53,7 +52,11 @@ program mesh
     !open(unit=1,file="../Rectangular_Y_Channel/input/input_naturalChannel_exact.txt",status='unknown')
     !open(unit=1,file="../Rectangular_Y_Channel/input/test.txt",status='unknown')
     !open(unit=1,file="../Rectangular_Y_Channel/input/input_naturalChannel_tidal.txt",status='unknown')
-    open(unit=1,file="../NHD_Y_Channel/input/input_naturalChannel_exact.txt",status='unknown')
+    !open(unit=1,file="../NHD_Y_Channel/input/input_naturalChannel_exact.txt",status='unknown')
+    !open(unit=1,file="../Multijunction_Network/input/input_multiJunction.txt",status='unknown')
+    !open(unit=1,file="../Multijunction_Network/input/input_multiJunction_NHD.txt",status='unknown')
+    !open(unit=1,file="../Multijunction_Network/input/input_multiJunction_NHD_mixedRouting.txt",status='unknown')
+    open(unit=1,file="../Multijunction_Network/input/input_multiJunction_NHD_mixedRouting_8channel.txt",status='unknown')
 
     print*, 'Reading input file'
 
@@ -292,14 +295,19 @@ program mesh
 
     ! ++++ Y channel connectivity ++++++!
     !* the number of links that are immediately upstream of link j
-    ndep(1)=0; ndep(2)=0; ndep(3)=2
+    ndep(1)=0; ndep(2)=0; ndep(3)=0; ndep(4)=0; ndep(5)=2; ndep(6)=3; ndep(7)=1; ndep(8)=1
 
     !* link number of k_th link that is immediately upstream of link j
     uslinks(1,1)=NAnum  !not available
     uslinks(1,2)=NAnum  !not available
-    uslinks(1,3)=1;  uslinks(2,3)=2
+    uslinks(1,3)=NAnum
+    uslinks(1,4)=NAnum
+    uslinks(1,5)=1; uslinks(2,5)=2
+    uslinks(1,6)=3; uslinks(2,6)=4; uslinks(3,6)=5
+    uslinks(1,7)=6
+    uslinks(1,8)=7
     !* link number that is immediately downstream of link j
-    dslink(1)=3; dslink(2)=3; dslink(3)=NAnum
+    dslink(1)=5; dslink(2)=5; dslink(3)=6; dslink(4)=6; dslink(5)=6; dslink(6)=7; dslink(7)=8
 
 
     !++++ in case of one channel +++!
@@ -328,13 +336,15 @@ program mesh
 
     instrdflag(1,1)=2; instrdflag(1,2)=0    !*discharge data is known at the upper end of link 1
     instrdflag(2,1)=2; instrdflag(2,2)=0    !*discharge is known at the upper end of link 2
-    instrdflag(3,1)=0; instrdflag(3,2)=1    !*stage data is known at the lower end of link 3
+    instrdflag(3,1)=2; instrdflag(3,2)=0    !*discharge data is known at the upper end of link 3
+    instrdflag(4,1)=2; instrdflag(4,2)=0    !*discharge data is known at the upper end of link 4
+    instrdflag(5,1)=0; instrdflag(5,2)=0    !*discharge data is known at the upper end of link 5
+    instrdflag(6,1)=0; instrdflag(6,2)=0    !*stage data is known at the lower end of link 6
+    instrdflag(7,1)=0; instrdflag(7,2)=0    !*stage data is known at the lower end of link 7
+    instrdflag(8,1)=0; instrdflag(8,2)=1    !*stage data is known at the lower end of link 8
 
     ! Nazmul: Need to create a connectivity table like the following:
     ! p=Junction sequence no, q= number of river reaches connected to that junction, (riverReachSequenceNoInThatJunction(i),i=1,q), (streamOrderOfEachRivers(i),i=1,q)
-
-
-
 
     x = 0.0
 
@@ -475,6 +485,12 @@ program mesh
     path = trim(output_path) // 'routing.txt'
     open(unit=97, file=trim(path), status='unknown')
 
+    path = trim(output_path) // 'currentRoutingNormal.txt'
+    open(unit=98, file=trim(path), status='unknown')
+
+    path = trim(output_path) // 'routingNotChanged.txt'
+    open(unit=99, file=trim(path), status='unknown')
+
 
 	! Some essential initial parameters for Diffusive Wave
 	theta = 1.0
@@ -490,7 +506,12 @@ program mesh
     !dimensionless_Cr, dimensionless_Fo, dimensionless_Fi, dimensionless_Fc, dimensionless_Di, dimensionless_D
     dimensionless_Fi = 10.1
     dimensionless_Fc = 10.1
+    dimensionless_D  = 0.1
     currentROutingDiffusive = 1
+
+    ! parameters for diffusive vs partial diffusive
+    currentRoutingNormal = 1
+    routingNotChanged = 0
 
 
 
@@ -503,22 +524,24 @@ program mesh
         write(8, 10)  t*60.0, j, (oldY(i,j), i=1,maxval(nx1))
         write(9, 10)  t*60.0, j, (oldQ(i,j), i=1, maxval(nx1))
         write(51, 10) t*60.0, j, (oldArea(i,j), i=1, maxval(nx1))
-        write(941, 10) t*60.0, j, (dimensionless_Cr(i,j), i=1, ncomp-1)
-        write(942, 10) t*60.0, j, (dimensionless_Fo(i,j), i=1, ncomp-1)
-        write(943, 10) t*60.0, j, (dimensionless_Fi(i,j), i=1, ncomp-1)
-        write(944, 10) t*60.0, j, (dimensionless_Di(i,j), i=1, ncomp-1)
-        write(945, 10) t*60.0, j, (dimensionless_Fc(i,j), i=1, ncomp-1)
-        write(946, 10) t*60.0, j, (dimensionless_D(i,j), i=1, ncomp-1)
+        write(941, 10) t*60.0, j, (dimensionless_Cr(i,j), i=1, maxval(nx1)-1)
+        write(942, 10) t*60.0, j, (dimensionless_Fo(i,j), i=1, maxval(nx1)-1)
+        write(943, 10) t*60.0, j, (dimensionless_Fi(i,j), i=1, maxval(nx1)-1)
+        write(944, 10) t*60.0, j, (dimensionless_Di(i,j), i=1, maxval(nx1)-1)
+        write(945, 10) t*60.0, j, (dimensionless_Fc(i,j), i=1, maxval(nx1)-1)
+        write(946, 10) t*60.0, j, (dimensionless_D(i,j), i=1, maxval(nx1)-1)
         write(95, 10) t*60.0, j, (celerity2(i), i=1, ncomp)
         write(96, 10) t*60.0, j, (diffusivity2(i), i=1, ncomp)
         write(97, *) t*60.0, j, currentROutingDiffusive(j)
+        write(98, *) t*60.0, j, (currentRoutingNormal(i,j), i=1, maxval(nx1)-1)
+        write(99, *) t*60.0, j, (routingNotChanged(i,j), i=1, maxval(nx1)-1)
 
     end do
 
 
     frus2 = 9999.
     notSwitchRouting=0
-    minNotSwitchRouting = 0
+    minNotSwitchRouting = 30
     !
     ! Loop on time
     !
@@ -562,6 +585,7 @@ program mesh
 
             qqn = qqn +1
 
+
         end if
 
 
@@ -575,12 +599,18 @@ program mesh
             !*total water areas at n+1 at the end nodes of upstream links that join link j
             areasum=0.0
             do k=1, ndep(j)
+
                 linknb=uslinks(k,j); nodenb=nx1(linknb)
                 areasum=areasum + oldArea(nodenb,linknb) + dap(nodenb,linknb)
+                !print*, 'areasum=', areasum!; pause
             end do
             dqp(1,j)=0.0;
             yav=0.0
             sumOldQ = 0.0
+
+
+
+
             do k=1, ndep(j)
                 linknb=uslinks(k,j); nodenb=nx1(linknb)
                 !**dqp(1,j)
@@ -594,11 +624,14 @@ program mesh
 
                 elevTable = xsec_tab(1,:,nodenb,linknb)
                 areaTable = xsec_tab(2,:,nodenb,linknb)
+                !print*, 'k, areak_ncomp',k, areak_ncomp!; pause
                 yk_ncomp = r_interpol(areaTable,elevTable,nel,areak_ncomp)
                 !* weighted average based on areas at the end nodes of upstream link ks
                 yav = yav + (areak_ncomp/areasum)*yk_ncomp
                 !print*, 'yav', yav
+                !print*, 'yav',yav, 'yk_ncomp', yk_ncomp!; pause
             end do
+            !print*, 'Check boundary', j, newQ(1,j), newY(ncomp,j); pause
 
 
             dqp(1,j)=dqp(1,j)+sumOldQ-oldQ(1,j) ! Change from DongHa
@@ -616,7 +649,8 @@ program mesh
       !!END+++++++ If the channel has boundary originated from a junction+++++++
 
 
-          !print*, 'Check boundary', j, newQ(1,j), newY(ncomp,j); pause 5001
+
+          !print*, 'Check boundary', 'areav', areav
 
 
 
@@ -634,6 +668,7 @@ program mesh
             ! Calculating the normal depth and critical depth at the river reach upstream as an output
             call normal_crit_y(1,j,q_sk_multi, S_0, currentQ, y_norm_us, y_crit_us, area_norm, area_crit)
         end if
+        !print*, j, 'y_norm_us',y_norm_us
 
 
         ! new approach to add multiple lateral flow to the same node
@@ -651,11 +686,16 @@ program mesh
 
             ! added condition for lateral flow at the upstream boundary
             if (latFlowLocations(i,j) .eq. 1) then
-                latFlowValue = latFlowValue / &
-                    (dx(1,j)+sum(dx(latFlowLocations(i,j):latFlowLocations(i,j)+latFlowXsecs(i,j)-1,j)))
-                do k=1,latFlowXsecs(i,j)+1
-                    lateralFlow(latFlowLocations(i,j)+k-1)=lateralFlow(latFlowLocations(i,j)+k-1) + latFlowValue
-                end do
+                if (latFlowXsecs(i,j) .gt. 1) then
+                    latFlowValue = latFlowValue / &
+                    (dx(1,j)+sum(dx(latFlowLocations(i,j):latFlowLocations(i,j)+latFlowXsecs(i,j)-2,j)))
+                    do k=1,latFlowXsecs(i,j)
+                        lateralFlow(latFlowLocations(i,j)+k-1)=lateralFlow(latFlowLocations(i,j)+k-1) + latFlowValue
+                    end do
+                else
+                    latFlowValue = latFlowValue / dx(1,j)
+                    lateralFlow(1)=latFlowValue
+                end if
                 newQ(1,j) = newQ(1,j)+lateralFlow(1)*dx(1,j)
             else
                 latFlowValue = latFlowValue / &
@@ -667,6 +707,16 @@ program mesh
                 end do
             end if
         end do
+
+        !print*, lateralFlow; pause
+
+
+
+
+
+
+
+
 
 
         ! checking the value of Fc and Fi in each river reach
@@ -687,18 +737,20 @@ program mesh
         ! higherLimitCount(j) = 0; lowerLimitCount(j) = ncomp         ! for dynamic
         ! higherLimitCount(j) = ncomp; lowerLimitCount(j) = ncomp         ! for diffusive
 
-        if (t .lt. 30) then
-            higherLimitCount(1) = ncomp; lowerLimitCount(1) = ncomp         ! diffusive
-            higherLimitCount(2) = ncomp; lowerLimitCount(2) = ncomp         ! diffusive
-            higherLimitCount(3) = ncomp; lowerLimitCount(3) = ncomp
-        else
-            higherLimitCount(1) = ncomp; lowerLimitCount(1) = ncomp         ! dynamic
-            higherLimitCount(2) = ncomp; lowerLimitCount(2) = ncomp         ! dynamic
-            higherLimitCount(3) = ncomp; lowerLimitCount(3) = ncomp         ! dynamic
-        end if
+
+        !! Forcing all computation to diffusive routing
+        higherLimitCount(1) = ncomp; lowerLimitCount(1) = ncomp
+        higherLimitCount(2) = ncomp; lowerLimitCount(2) = ncomp
+        higherLimitCount(3) = ncomp; lowerLimitCount(3) = ncomp
+        higherLimitCount(4) = ncomp; lowerLimitCount(4) = ncomp
+        higherLimitCount(5) = ncomp; lowerLimitCount(5) = ncomp
+        higherLimitCount(6) = ncomp; lowerLimitCount(6) = ncomp
+        higherLimitCount(7) = ncomp; lowerLimitCount(7) = ncomp
+        higherLimitCount(8) = ncomp; lowerLimitCount(8) = ncomp
 
 
 
+        !print*, 'check here',j, ncomp; pause
         ! running either dynamic or diffusive wave routing at each river reach
         if (higherLimitCount(j) .ge. ncomp/2.) then
             if ( (currentROutingDiffusive(j) .eq. 0) .and. (notSwitchRouting(j) .lt. minNotSwitchRouting)) then
@@ -801,9 +853,8 @@ program mesh
             stop
         end if
 
-        !print*, 'j',j, newY(1:ncomp,j)
-
-        if (j .eq. nlinks) then
+        ! Checking maximum celerity at the end of one time loop
+        if (j .eq. 1) then
             do i=1,nlinks
                 maxCelerity = maxval(celerity(1:nx1(i),i))
             end do
@@ -811,6 +862,10 @@ program mesh
 
         write(95, 10) t*60.+dtini,j, (celerity2(i), i=1, ncomp)
         write(96, 10) t*60.+dtini,j, (diffusivity2(i), i=1, ncomp)
+
+        ! checking full vs partial diffusive; which routing is applied at which node
+        write(98, *) t*60.+dtini, j, (currentRoutingNormal(i,j), i=1, maxval(nx1)-1)
+        write(99, *) t*60.+dtini, j, (routingNotChanged(i,j), i=1, maxval(nx1)-1)
 
     end do  ! end of j loop
 
@@ -823,11 +878,12 @@ program mesh
                 courant(i)=(newQ(i,j)+newQ(i+1,j))/(newArea(i,j)+newArea(i+1,j))*dtini/dx(i,j)
             endif
         enddo
+        if (maxCourant .lt. maxval (courant(1:ncomp-1))) then
+            maxCourant = maxval (courant)
+        endif
     enddo
 
-    if (maxCourant .lt. maxval (courant)) then
-        maxCourant = maxval (courant)
-    endif
+
 
     t = t + dtini/60.
     notSwitchRouting(j) = notSwitchRouting(j) + 1
@@ -848,17 +904,18 @@ program mesh
         ncomp = nx1(j)
         call calc_dimensionless_numbers(j)
         if ( (mod( (t-t0*60.)*60.  ,saveInterval) .le. TOLERANCE) .or. ( t .eq. tfin *60. ) ) then
-            write(941, 10) t*60.0,j, (dimensionless_Cr(i,j), i=1, ncomp-1)
-            write(942, 10) t*60.0,j, (dimensionless_Fo(i,j), i=1, ncomp-1)
-            write(943, 10) t*60.0,j, (dimensionless_Fi(i,j), i=1, ncomp-1)
-            write(944, 10) t*60.0,j, (dimensionless_Di(i,j), i=1, ncomp-1)
-            write(945, 10) t*60.0,j, (dimensionless_Fc(i,j), i=1, ncomp-1)
-            write(946, 10) t*60.0,j, (dimensionless_D(i,j),  i=1, ncomp-1)
+            write(941, 10) t*60.0,j, (dimensionless_Cr(i,j), i=1, maxval(nx1)-1)
+            write(942, 10) t*60.0,j, (dimensionless_Fo(i,j), i=1, maxval(nx1)-1)
+            write(943, 10) t*60.0,j, (dimensionless_Fi(i,j), i=1, maxval(nx1)-1)
+            write(944, 10) t*60.0,j, (dimensionless_Di(i,j), i=1, maxval(nx1)-1)
+            write(945, 10) t*60.0,j, (dimensionless_Fc(i,j), i=1, maxval(nx1)-1)
+            write(946, 10) t*60.0,j, (dimensionless_D(i,j),  i=1, maxval(nx1)-1)
         end if
     enddo
 
 
-    print*, 'times',mod( (t-t0*60.)*60.  ,saveInterval), t, t0, dtini, (currentROutingDiffusive(j),j=1,nlinks)
+    !print*, 'times',mod( (t-t0*60.)*60.  ,saveInterval), t, t0, dtini, (currentROutingDiffusive(j),j=1,nlinks)
+    print "(A, f6.2, A)", 'Parcent completed:', (t-t0*60.)/(tfin*60.-t0*60.)*100, '%'
     if ( (mod( (t-t0*60.)*60.  ,saveInterval) .le. TOLERANCE) .or. ( t .eq. tfin *60. ) ) then
 
     do j = 1, nlinks
@@ -874,9 +931,6 @@ program mesh
     end do
 
     end if
-    !  if (n .eq. 8000) pause
-
-    !write(81, *) t, newArea(ncomp)
 
     ! update of Y, Q and Area vectors
     oldY   = newY
@@ -908,11 +962,13 @@ program mesh
     close(946)
     close(95)
     close(96)
-    !close(81)
+    close(97)
+    close(98)
+    close(99)
 
    ! print*, 'dx', (dx(i,j), i=1, ncomp-1)
    ! print*, 'Froude', (froud(i), i=1, ncomp)
-   ! print*, 'Bed', (z(i,j), i=1, ncomp)
+   print*, 'Bed', z
    ! print*, 'newArea', (newArea(i,j), i=1, ncomp)
    ! print*, 'I2_corr', (ci2(i), i=1, ncomp)
    ! print*, 'Courant no', (courant(i), i=1, ncomp-1)
@@ -923,7 +979,8 @@ program mesh
 10  format(f12.2 ,i6, 1200f13.3)
 
     call cpu_time( t2 )
-    print '("Time = ",f10.3," seconds.")',t2 - t1
+    print '("Total CPU Time = ",f10.3," seconds.")',t2 - t1
+    !print "(A, f10.3, A)", 'Total CPU Time = ', t2 - t1, ' seconds.'
     !pause 202
 end program mesh
 
@@ -932,7 +989,7 @@ function r_interpol(x,y,kk,xt)
     integer, intent(in) :: kk
     real, intent(in) :: xt, x(kk), y(kk)
 
-    if (xt.lt.maxval(x) .and. xt.ge.minval(x)) then
+    if (xt.le.maxval(x) .and. xt.ge.minval(x)) then
         do k=1,kk-1
             if((x(k)-xt)*(x(k+1)-xt).le.0)then
 
@@ -964,7 +1021,7 @@ function r_interpol_time(x,y,jj,xt)
     !real(kind=8), intent(out) :: r_interpol_time
 
 
-    if (xt.lt.maxval(x) .and. xt.ge.minval(x)) then
+    if (xt.le.maxval(x) .and. xt.ge.minval(x)) then
         do j=1,jj-1
             if((x(j)-xt)*(x(j+1)-xt).le.0)then
 

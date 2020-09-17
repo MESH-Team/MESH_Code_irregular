@@ -59,7 +59,9 @@ subroutine secpred(j)
 
         pere(i,j)=r_interpol(elevTable,pereTable,nel,xt)
         hy     =r_interpol(elevTable,rediTable,nel,xt)
-        co(i)  =r_interpol(elevTable,convTable,nel,xt)
+        !co(i)  =r_interpol(elevTable,convTable,nel,xt)
+        currentCubicDepth=(elevTable-z(i,j))**3
+        co(i)  =q_sk_multi * r_interpol(currentCubicDepth,convTable,nel,(xt-z(i,j))**3.0)
         bo(i,j)  =r_interpol(elevTable,topwTable,nel,xt)
 !        ci1(i) =r_interpol(areaTable,nwi1Table,nel,xt)
         ci1(i) =r_interpol(currentSquareDepth,nwi1Table,nel,(depth(i))**2)
