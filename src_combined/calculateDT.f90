@@ -22,6 +22,8 @@ subroutine calculateDT(initialTime, time, saveInterval, maxAllowCourantNo, tfin)
     a = floor( (time-initialTime*60.) /( saveInterval/60. ))
     b = floor(( (time-initialTime*60.) +dtini/60.)/( saveInterval/60. ))
 
+
+
     !print*, 'a, b', a, b, time, initialTime, dtini, saveInterval ; pause 5000
 
     !if( (b .gt. a) .and. (time .gt. initialTime) ) then
@@ -33,10 +35,12 @@ subroutine calculateDT(initialTime, time, saveInterval, maxAllowCourantNo, tfin)
         dtini = (a+1) * ( saveInterval ) - (time-initialTime*60.)*60.
     end if
 
+    if (dtini .gt. 100.) dtini = 100.
+
     if ( time+dtini/60. .gt. tfin*60. ) dtini =  (tfin*60.-time)*60.
 
 
-    !print*, 'dt =', dtini, time, saveInterval, maxAllowCourantNo
+    !print*, 'dt =', a, b,dtini!, time, saveInterval, maxAllowCourantNo
 
     !! making dtini as a multiplier of 60
     !dtini = floor(dtini/60.) * 60

@@ -150,6 +150,10 @@ subroutine readXsection(k,rmanning,timesDepth)
         peri1(j)=cal_peri
         redi1(j)=a1(j)/peri1(j)
         conv1(j)=1./rmanning*a1(j)*(redi1(j))**(2./3.)
+        if (peri1(j) .le. TOLERANCE) then
+            redi1(j) =0.0; conv1(j)=0.0
+        endif
+
         tpW1(j)=cal_topW
 
         if(j.eq.1) then

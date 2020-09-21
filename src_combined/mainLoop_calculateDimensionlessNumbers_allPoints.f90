@@ -15,7 +15,7 @@ subroutine call_dimensionless_numbers
 
     !avg_celerity = celerity(2)
 
-    maxValue = 1e7
+    maxValue = 1e12
 
     do i=1, ncomp-1
 
@@ -43,6 +43,8 @@ subroutine call_dimensionless_numbers
 
         ch_star_avg = ((ch_us + ch_ds) / 2.)  / sqrt( grav ) !! CORRECTED
         channel_length = dx(i)
+
+        !print*, avg_celerity, ch_us + ch_ds, sk(i)
 
 
 

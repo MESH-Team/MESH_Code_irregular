@@ -18,7 +18,7 @@ program mesh
     integer(kind=4) :: i, j, k, n, ntim, igate, pp, boundaryFileMaxEntry, ppp, qqq, noLatFlow, noQSKtable, saveFrequency
     integer(kind=4) :: lowerLimitCount, higherLimitCount, minNotSwitchRouting
 
-    real(kind=4) :: cour, da, dq, dxini, yy, x, thetas, thesinv, saveInterval, width
+    real(kind=4) :: cour, da, dq, dxini, yy, x, thetas, thesinv, saveInterval, width, temp
     real(kind=4) :: skk, qq, qn, xt, r_interpol, maxCourant, dtini_given
     real(kind=4) :: arean, areac, hyrdn, hyrdc, perimn, perimc, qcrit, s0ds, timesDepth, latFlowValue
 
@@ -56,7 +56,8 @@ program mesh
     !open(unit=1,file="../../../MESH_code/4-A-1_US_2bound/PureSuperCritical_Boundary_Switch_Test/input.txt",status='unknown')
     !open(unit=1,file="../../../MESH_code/4-A-1_US_2bound/PureSuperCritical_Boundary_Switch_Test2/input.txt",status='unknown')
     !open(unit=1,file="../NHDplus_at_US_lateralFlowOnly/input.txt",status='unknown')
-    open(unit=1,file="../NHD_Y_Channel/input/input_naturalChannel_exact1_interpol.txt",status='unknown')
+    !open(unit=1,file="../NHD_Y_Channel/input/input_naturalChannel_exact1.txt",status='unknown')
+    open(unit=1,file="../NHD_CS5_CS6/input/input_naturalChannel_exact1.txt",status='unknown')
 
     print*, 'Reading input file'
 
@@ -248,6 +249,7 @@ program mesh
 
 
     ! read lateral flow conditions
+    !print*, noLatFlow; pause
     do i=1,noLatFlow
         write(file_num,'(i4.4)')latFlowLocations(i)
         open(89,file=trim(lateralFlow_path)//'lateral_'//file_num//'.txt')
@@ -364,24 +366,29 @@ program mesh
         xt=newY(ncomp)
 		newArea(ncomp)=r_interpol(ncompElevTable,ncompAreaTable,nel,xt)
 
-		! new approach to add multiple lateral flow to the same node
+		! new approach to add multiple lateral flow to the 1st node node
         lateralFlow = 0
         do i=1,noLatFlow
             if (latFlowType(i) .eq. 1) then
                 latFlowValue = r_interpol_time(lateralFlowTable(1, 1:dataInEachLatFlow(i), i), &
                     lateralFlowTable(2, 1:dataInEachLatFlow(i), i),dataInEachLatFlow(i),t)
-                !print*, t, latFlowValue
+               ! print*, t, 'latFlowValue',latFlowValue; pause
             elseif (latFlowType(i) .eq. 2) then
                 latFlowValue = r_interpol(lateralFlowTable(1, 1:dataInEachLatFlow(i), i), &
                     lateralFlowTable(2, 1:dataInEachLatFlow(i), i),dataInEachLatFlow(i),oldQ(latFlowLocations(i)-1))
             endif
             ! added condition for lateral flow at the upstream boundary
             if (latFlowLocations(i) .eq. 1) then
-                latFlowValue = latFlowValue / &
-                    (dx(1)+sum(dx(latFlowLocations(i):latFlowLocations(i)+latFlowXsecs(i)-1)))
-                do k=1,latFlowXsecs(i)+1
-                    lateralFlow(latFlowLocations(i)+k-1)=lateralFlow(latFlowLocations(i)+k-1) + latFlowValue
-                end do
+                if (latFlowXsecs(i) .gt. 1) then
+                    latFlowValue = latFlowValue / &
+                    (dx(1)+sum(dx(latFlowLocations(i):latFlowLocations(i)+latFlowXsecs(i)-2)))
+                    do k=1,latFlowXsecs(i)
+                        lateralFlow(latFlowLocations(i)+k-1)=lateralFlow(latFlowLocations(i)+k-1) + latFlowValue
+                    end do
+                else
+                    latFlowValue = latFlowValue / dx(1)
+                    lateralFlow(1)=latFlowValue
+                end if
                 newQ(1) = newQ(1)+lateralFlow(1)*dx(1)
             else
                 latFlowValue = latFlowValue / &
@@ -408,34 +415,10 @@ program mesh
                     q_sk_multi = r_interpo_nn(Q_Sk_Table(1,1:tableLength,pp),Q_Sk_Table(2,1:tableLength,pp),tableLength,newQ(1))
                 end if
               end do
-              !slope = (z(1)-z(2))/dx(1)
-              !call normal_crit_y(1, q_sk_multi, slope, newQ(1)), temp, temp2, newArea(i), temp3)
 
-
-              elevTable = xsec_tab(1,:,1)
-              areaTable = xsec_tab(2,:,1)
-              rediTable = xsec_tab(4,:,1)
-              topwTable = xsec_tab(6,:,1)
-              area_0 = r_interpol(elevTable,areaTable,nel,oldY(1))
-              width_0= r_interpol(elevTable,topwTable,nel,oldY(1))
-              area_crit=area_0
-              errorY = 100.
-            do while (errorY .gt. 0.0001)
-
-              hydR_0 = r_interpol(areaTable,rediTable,nel,area_0)
-              area_norm = newQ(1)/sk(1)/q_sk_multi/ hydR_0 ** (2./3.) / sqrt(S_0)
-
-              errorY = abs(area_norm - area_0) / area_0
-              area_0 = area_norm
-              area_crit= (newQ(1) * newQ(1) * width_0 / grav) ** (1./3.)
-              width_0  = r_interpol(areaTable,topwTable,nel,area_crit)
-
-            enddo
-
-              !pause
-          y_norm_us = r_interpol(areaTable,elevTable,nel,area_0)
-          y_crit_us = r_interpol(areaTable,elevTable,nel,area_crit)
-          print*, 'check point -1',newQ(1),1/sk(1),q_sk_multi, y_norm_us-z(1),  y_crit_us-z(1)
+          call normal_crit_y(1, q_sk_multi, S_0, newQ(1), y_norm_us, y_crit_us, temp, temp)
+          !print*, 'check point -1',newQ(1),1/sk(1),q_sk_multi, y_norm_us-z(1),  y_crit_us-z(1)
+          !pause
       endif
 
 
@@ -546,7 +529,7 @@ program mesh
         !print*, 'newQ', (newQ(i), i=1, ncomp) celerity
 
         !if (mod(n+1,saveFrequency) .eq. 0 .or. n .eq. (ntim-1)) then
-        print*, 'times', t, t0, dtini, currentROutingDiffusive
+        print*, 'Running hour:', t/60., 'dt =', dtini, 'sec', ' Routing type',currentROutingDiffusive
         if ( (mod( (t-t0*60.)*60.  ,saveInterval) .eq. 0.0) .or. ( t .ge. tfin *60. ) ) then
             write(8, 10) t*60., (newY(i), i=1,ncomp)
             write(9, 10) t*60., (newQ(i), i=1,ncomp)
@@ -612,11 +595,13 @@ program mesh
     print*, 'newArea', (newArea(i), i=1, ncomp)
     print*, 'I2_corr', (ci2(i), i=1, ncomp)
     print*, 'Courant no', (courant(i), i=1, ncomp-1)
+
+    print*, 'Fc', (dimensionless_Fc(i), i=1, ncomp-1)
     print*, 'Maximum Courant no', maxCourant
 
     !
 !10  format(f12.2 , <ncomp>f12.3)
-10  format(f14.3 , 1200f13.3)
+10  format(f14.3 , 1200f20.5)
 
     call cpu_time( t2 )
     print '("Time = ",f10.3," seconds.")',t2 - t1

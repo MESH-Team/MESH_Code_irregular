@@ -1,3 +1,4 @@
+NOT USED NOW
 module subtools
 
     use constants_module
@@ -84,7 +85,7 @@ contains
         integer, intent(in) :: i
         real, intent(in) :: q_sk_multi, So, dsc
         real, intent(out) :: y_norm, y_crit, area_n, area_c
-        real :: area_0, width_0, errorY, hydR_0, r_interpol, fro
+        real :: area_0, width_0, errorY, hydR_0, r_interpol!, fro
         integer :: trapnm_app, recnm_app, iter
 
 
@@ -92,15 +93,18 @@ contains
 
         !y_norm=1.0    !*initial estimate
 
+
             elevTable = xsec_tab(1,:,i)
             areaTable = xsec_tab(2,:,i)
             rediTable = xsec_tab(4,:,i)
             topwTable = xsec_tab(6,:,i)
             area_0 = r_interpol(elevTable,areaTable,nel,oldY(i))
             width_0= r_interpol(elevTable,topwTable,nel,oldY(i))
-                !print*, 'nazmul j', j, oldY(1,j)
+
             area_c=area_0
             errorY = 100.
+            !print*, 'inside function', i, q_sk_multi, So, dsc, area_0, width_0
+            !pause
             do while (errorY .gt. 0.00001)
 
                 hydR_0 = r_interpol(areaTable,rediTable,nel,area_0)
@@ -110,15 +114,19 @@ contains
                 area_0 = area_n
                 area_c = (dsc * dsc * width_0 / grav) ** (1./3.)
                 width_0  = r_interpol(areaTable,topwTable,nel,area_c)
-                fro=abs(dsc)/sqrt(grav*area_c**3.0/width_0)
+                !fro=abs(dsc)/sqrt(grav*area_c**3.0/width_0)
+                !print*, 'check point -1', area_0,  area_c, fro
 
             enddo
                 !print*, 'nazmul j', j, oldY(1,j)
-            area_n = area_0
-            y_norm = r_interpol(areaTable,elevTable,nel,area_n)
-            y_crit = r_interpol(areaTable,elevTable,nel,area_c)
-            !print*, 'check point 0', So, S_0,dsc,width_0, y_norm-z(i), y_crit-z(i), area_n, area_norm, area_c, fro
 
+            y_norm = r_interpol(areaTable,elevTable,nel,area_0)
+            y_crit = r_interpol(areaTable,elevTable,nel,area_c)
+
+
+            !print*, 'check point 0', So, S_0,dsc,width_0, y_norm-z(i), y_crit-z(i), area_n, area_norm, area_c, fro
+            !print*, 'check point -1', dsc, y_norm-z(1),  y_crit-z(1)
+            !pause 500
     end subroutine normal_crit_y
 
  end module

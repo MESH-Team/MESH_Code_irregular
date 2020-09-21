@@ -11,7 +11,7 @@ module arrays_section_module
 ! only in version 2 20191511
     real(kind=4), allocatable :: I2Tablep(:),I2Tablec(:)
     real(kind=4), allocatable :: upstreamI2Tablec(:), downstreamI2Tablep(:)
-    real(kind=4), allocatable :: currentSquareDepth(:), downstreamSquareDepth(:), upstreamSquareDepth(:)
+    real(kind=4), allocatable :: currentSquareDepth(:), downstreamSquareDepth(:), upstreamSquareDepth(:), currentCubicDepth(:)
 
     integer :: maxTableLength, nel
 
@@ -41,6 +41,7 @@ contains
         allocate(upstreamI2Tablec(nel))
         allocate(downstreamI2Tablep(nel))
         allocate(currentSquareDepth(nel))
+        allocate(currentCubicDepth(nel))
         allocate(downstreamSquareDepth(nel))
         allocate(upstreamSquareDepth(nel))
 

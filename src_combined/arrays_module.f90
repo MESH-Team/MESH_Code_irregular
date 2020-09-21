@@ -37,6 +37,8 @@ module arrays_module
     integer, allocatable :: Q_SK_tableEntry(:)
     real, allocatable :: eachQSKtableNodeRange(:,:), Q_SK_Table(:,:,:)
 
+    integer, allocatable :: currentRoutingNormal(:), routingNotChanged(:)
+
 
 contains
 
@@ -142,6 +144,10 @@ contains
         allocate(dimensionless_Di(num_points-1))
         allocate(dimensionless_Fc(num_points-1))
         allocate(dimensionless_D(num_points-1))
+
+
+        allocate(currentRoutingNormal(num_points-1))
+        allocate(routingNotChanged(num_points-1))
 
     end subroutine setup_arrays
 

@@ -8,7 +8,6 @@ subroutine mesh_diffusive(ppp,qqq, t0, t, tfin, saveInterval)
     use var_module
     use arrays_section_module
     use xsec_attribute_module
-    use subtools
 
     implicit none
 
@@ -22,7 +21,7 @@ subroutine mesh_diffusive(ppp,qqq, t0, t, tfin, saveInterval)
 
     real(kind=4) :: cour, cour2, q_sk_multi, sfi, r_interpol_time, r_interpo_nn, r_interpol, temp, temp2, temp3
 
-    real(kind=4) :: y_norm_ds, y_crit_ds, S_ncomp, frds, area_0, width_0, hydR_0, errorY, slope
+    real(kind=4) :: y_norm_ds, y_crit_ds, S_ncomp, frds, area_0, width_0, hydR_0, errorY, slope, stg1, stg2
     real :: area_n, errorX, normY
     integer :: tableLength
 
@@ -92,6 +91,9 @@ subroutine mesh_diffusive(ppp,qqq, t0, t, tfin, saveInterval)
 			exi(i) = -1.0 * rri / ( ppi * exi(i-1) + qqi )
 			fxi(i) = ( sxi - ppi * fxi(i-1) ) / ( ppi * exi(i-1) + qqi )
 
+
+
+
 			!print*,i, dtini, celerity(i), lateralFlow(i)
         end do
         !pause 1002
@@ -100,14 +102,17 @@ subroutine mesh_diffusive(ppp,qqq, t0, t, tfin, saveInterval)
 			!pause 1001
         !! Applying d/s boundary
         ! qp(ncomp) = 0.
-        qp(ncomp) = oldQ(ncomp-1)+lateralFlow(ncomp-1)*dx(ncomp-1)
+        qp(ncomp) = oldQ(ncomp-1)+lateralFlow(ncomp)*dx(ncomp-1)
         qpx(ncomp)= 0.
 
         do i = ncomp-1,1,-1
+            !print*, qp(i), qpx(i), ffi(i)
 
 			qp(i) = eei(i) * qp(i+1) + ffi(i)
 			qpx(i)= exi(i) *qpx(i+1) + fxi(i)
         end do
+
+        !print*, 'qp', qp
 
         S_ncomp = (-z(ncomp)+z(ncomp-1))/dx(ncomp-1)
         elevTable = xsec_tab(1,:,ncomp)
@@ -123,80 +128,37 @@ subroutine mesh_diffusive(ppp,qqq, t0, t, tfin, saveInterval)
 
         !!! calculating y-normal and y-critical at downstream
         if (S_ncomp .gt. 0.) then
-              q_sk_multi = 1.0
-              do pp = 1, size(Q_sk_tableEntry)
-                if ( ( eachQSKtableNodeRange(1,pp) - ncomp) * ( eachQSKtableNodeRange(2,pp) - ncomp) .le. 0 ) then
-                    tableLength = Q_sk_tableEntry(pp)
-                    q_sk_multi = r_interpo_nn(Q_Sk_Table(1,1:tableLength,pp),Q_Sk_Table(2,1:tableLength,pp),tableLength,qp(ncomp))
-                end if
-              end do
-              area_0 = newArea(ncomp)
-              width_0= r_interpol(elevTable,topwTable,nel,newY(ncomp))
-              area_crit=area_0
-              errorY = 100.
-            do while (errorY .gt. 0.0001)
-
-              hydR_0 = r_interpol(areaTable,rediTable,nel,area_0)
-              area_norm = qp(ncomp)/sk(ncomp)/q_sk_multi/ hydR_0 ** (2./3.) / sqrt(S_ncomp)
-
-              errorY = abs(area_norm - area_0) / area_0
-              area_0 = area_norm
-              area_crit= (qp(ncomp) * qp(ncomp) * width_0 / grav) ** (1./3.)
-              width_0  = r_interpol(areaTable,topwTable,nel,area_crit)
-            enddo
-          y_norm_ds = r_interpol(areaTable,elevTable,nel,area_0)
-          y_crit_ds = r_interpol(areaTable,elevTable,nel,area_crit)
+            call calc_q_sk_multi(ncomp,qp(ncomp),q_sk_multi)
+            call normal_crit_y(ncomp, q_sk_multi, S_ncomp, qp(ncomp), y_norm_ds, y_crit_ds, area_norm, area_crit)
         end if
         !print*, y_norm_ds, y_crit_ds
 
         !!! checking if d/s is critical
         if (frds .ge. 1.0) newY(ncomp) = y_norm_ds
 
-        qp(1) =r_interpol_time(USBoundary(1, 1:ppp),USBoundary(2, 1:ppp),ppp,t+dtini/60.)
+        qp(1) = newQ(1)
         !newY(ncomp) =r_interpol_time(DSBoundary(1, 1:qqq),DSBoundary(2, 1:qqq),qqq,t+dtini/60.)
         depth(ncomp)=newY(ncomp)-z(ncomp)
+
+        !print*, 'check point 10'
 
 
 
         do i=ncomp,1,-1
 
-            q_sk_multi = 1.0
-            do pp = 1, size(Q_sk_tableEntry)
-                if (  ( eachQSKtableNodeRange(1,pp) - i) * ( eachQSKtableNodeRange(2,pp) - i) .le. 0 ) then
-                    q_sk_multi = r_interpo_nn(Q_Sk_Table(1,1:Q_sk_tableEntry(pp),pp),   &
-                      Q_Sk_Table(2,1:Q_sk_tableEntry(pp),pp),Q_sk_tableEntry(pp),qp(i))
-                end if
-            end do
+            !q_sk_multi = 1.0
+            !do pp = 1, size(Q_sk_tableEntry)
+            !    if (  ( eachQSKtableNodeRange(1,pp) - i) * ( eachQSKtableNodeRange(2,pp) - i) .le. 0 ) then
+            !        q_sk_multi = r_interpo_nn(Q_Sk_Table(1,1:Q_sk_tableEntry(pp),pp),   &
+            !          Q_Sk_Table(2,1:Q_sk_tableEntry(pp),pp),Q_sk_tableEntry(pp),qp(i))
+            !    end if
+            !end do
 
-    !      Nazmul change: read all attributes from tab file
-            elevTable = xsec_tab(1,:,i)
-            convTable = xsec_tab(5,:,i)
 
-            areaTable = xsec_tab(2,:,i)
-            pereTable = xsec_tab(3,:,i)
-            topwTable = xsec_tab(6,:,i)
-    !     interpolate the cross section attributes based on water elevation
-            xt=newY(i)
-            co(i)  =q_sk_multi * r_interpol(elevTable,convTable,nel,xt)
-            !width = r_interpol(elevTable,topwTable,nel,xt)
+            call calc_q_sk_multi(i,qp(i),q_sk_multi)
 
 
 
-            newArea(i) = r_interpol(elevTable,areaTable,nel,xt)
-            pere(i) = r_interpol(elevTable,pereTable,nel,xt)
-            bo(i) = r_interpol(elevTable,topwTable,nel,xt)
-
-
-            sfi = ( qp(i) / co(i) ) ** 2.0
-
-            celerity2(i)=5.0 / 3.0 * sfi ** 0.3 * abs(qp(i)) ** 0.4 / bo(i) ** 0.4 / (1/(sk(i)*q_sk_multi)) ** 0.6
-            diffusivity2(i) = abs(qp(i)) / 2.0 / bo(i) / sfi
-
-
-        ! next 3 lines are commented out to check applicability of MC routing
-        !    if (i .gt. 1) newY(i-1) = newY(i) + sign ( sfi, qp(i) ) * dx(i-1)
-        !    if (i .eq. ncomp) print*,'qp=', qp
-        !    if (i .gt. 1) print*, 'check', sfi, (z(i-1)-z(i))/dx(i-1), dx(i-1), newY(i)-z(i), newY(i-1)-z(i-1)
 
 
 
@@ -209,26 +171,93 @@ subroutine mesh_diffusive(ppp,qqq, t0, t, tfin, saveInterval)
                 slope = (z(i)-z(i+1))/dx(i)
             end if
 
-            call normal_crit_y(i, q_sk_multi, slope, qp(i), newY(i), temp, newArea(i), temp)
+            !print*, 'i = ', i, oldY(i), slope, qp(i)
+
+            !call normal_crit_y(i, q_sk_multi, slope, qp(i), newY(i), temp, newArea(i), temp)
+
+!      Nazmul change: read all attributes from tab file
+            elevTable = xsec_tab(1,:,i)
+            convTable = xsec_tab(5,:,i)
+
+            areaTable = xsec_tab(2,:,i)
+            pereTable = xsec_tab(3,:,i)
+            topwTable = xsec_tab(6,:,i)
+    !     interpolate the cross section attributes based on water elevation
+            xt=newY(i)
+
+            currentCubicDepth=(elevTable-z(i))**3
+
+            !co(i)  = q_sk_multi * r_interpol(elevTable,convTable,nel,xt)
+            co(i)  =q_sk_multi * r_interpol(currentCubicDepth,convTable,nel,(newY(i)-z(i))**3.0)
+
+            bo(i) =  r_interpol(elevTable,topwTable,nel,xt)
+            pere(i)= r_interpol(elevTable,pereTable,nel,xt)
+
+            !width = r_interpol(elevTable,topwTable,nel,xt)
+
+
+
+            sfi = ( qp(i) / co(i) ) ** 2.0
+
+
+            celerity2(i)=5.0 / 3.0 * sfi ** 0.3 * abs(qp(i)) ** 0.4 / bo(i) ** 0.4 / (1/(sk(i)*q_sk_multi)) ** 0.6
+            diffusivity2(i) = abs(qp(i)) / 2.0 / bo(i) / sfi
+
+        if (i .gt. 1) then
+			!! If DSP: D is below 1.0, we switch to partial diffusive routing
+			if (dimensionless_D(i-1) .lt. 0.85) then
+				slope = (z(i-1)-z(i))/dx(i-1)
+				call calc_q_sk_multi(i-1,qp(i-1),q_sk_multi)
+				! applying normal depth to all the nodes
+				call normal_crit_y(i-1, q_sk_multi, slope, qp(i-1), newY(i-1), temp, newArea(i-1), temp)
+
+				 ! Book-keeping: changing from full diffusive to partial diffusive
+				if ( currentRoutingNormal(i-1) .ne. 1 ) routingNotChanged(i-1) = 0
+				currentRoutingNormal(i-1) = 1
+
+			!! If DSP: D is not below 1.0, we switch to full diffusive routing
+			elseif ( (dimensionless_D(i-1) .ge. 0.85) .and. (dimensionless_D(i-1) .lt. 1.0) ) then
+				slope = (z(i-1)-z(i))/dx(i-1)
+				call calc_q_sk_multi(i-1,qp(i-1),q_sk_multi)
+				! applying normal depth to all the nodes
+				call normal_crit_y(i-1, q_sk_multi, slope, qp(i-1), stg1, temp, newArea(i-1), temp)
+
+				stg2 = newY(i) + sign ( sfi, qp(i) ) * dx(i-1)
+				newY(i-1) = ( stg2 * (dimensionless_D(i-1) - 0.85) + &
+								stg1 * (1.0 - dimensionless_D(i-1)) ) / (1.0 - 0.85)
+				 ! Book-keeping: changing from full diffusive to partial diffusive
+				if ( currentRoutingNormal(i-1) .ne. 3 ) routingNotChanged(i-1) = 0
+				currentRoutingNormal(i-1) = 3
+
+			else
+				newY(i-1) = newY(i) + sign ( sfi, qp(i) ) * dx(i-1)
+
+				 ! Book-keeping: changing from partial diffusive to full diffusive
+				if ( currentRoutingNormal(i-1) .ne. 0 ) routingNotChanged(i-1) = 0
+				currentRoutingNormal(i-1) = 0
+
+			end if
+		end if
+
+		! Book-keeping: Counting the number as for how many time steps the routing method is unchanged
+		routingNotChanged(i-1) = routingNotChanged(i-1) + 1
+
 
 
 
 
         end do
 
-        do i=1,ncomp
+        !do i=1,ncomp
             !celerity(i) = sign ( sum(celerity2) / ncomp, qp(i) )
 
-            celerity(i) =  sum(celerity2) / ncomp
-            !celerity(i) =  celerity2(i) !!! Test
-            !print*, celerity(i)
-        end do
+            celerity(1:ncomp) =  sum(celerity2(1:ncomp)) / ncomp
 
+        !end do
 
-        !diffusivity = sum(diffusivity2) / ncomp
 
 		do i = 1, ncomp
-            diffusivity(i)=diffusivity2(i) !!! Test
+            diffusivity(i)=sum(diffusivity2(1:ncomp)) / ncomp
 			if (diffusivity(i) .gt. 10.) diffusivity(i) = 10. !!! Test
 		end do
         ! Final update
@@ -253,3 +282,76 @@ subroutine mesh_diffusive(ppp,qqq, t0, t, tfin, saveInterval)
 
 
 end subroutine mesh_diffusive
+
+subroutine normal_crit_y(i, q_sk_multi, So, dsc, y_norm, y_crit, area_n, area_c)
+
+    use constants_module
+    use arrays_module
+    use matrix_module
+    use var_module
+    use arrays_section_module
+    use xsec_attribute_module
+
+	implicit none
+
+	integer, intent(in) :: i
+	real, intent(in) :: q_sk_multi, So, dsc
+	real, intent(out) :: y_norm, y_crit, area_n, area_c
+	real :: area_0, width_0, errorY, hydR_0, r_interpol!, fro
+	integer :: trapnm_app, recnm_app, iter
+
+
+		elevTable = xsec_tab(1,:,i)
+		areaTable = xsec_tab(2,:,i)
+		rediTable = xsec_tab(4,:,i)
+		topwTable = xsec_tab(6,:,i)
+		area_0 = r_interpol(elevTable,areaTable,nel,oldY(i))
+		width_0= r_interpol(elevTable,topwTable,nel,oldY(i))
+
+		area_c=area_0
+		errorY = 100.
+		!pause
+		do while (errorY .gt. 0.00001)
+
+			hydR_0 = r_interpol(areaTable,rediTable,nel,area_0)
+			area_n = dsc/sk(i)/q_sk_multi/ hydR_0 ** (2./3.) / sqrt(So)
+
+			errorY = abs(area_n - area_0) / area_n
+			area_0 = area_n
+			area_c = (dsc * dsc * width_0 / grav) ** (1./3.)
+			width_0  = r_interpol(areaTable,topwTable,nel,area_c)
+			!fro=abs(dsc)/sqrt(grav*area_c**3.0/width_0)
+		enddo
+
+		y_norm = r_interpol(areaTable,elevTable,nel,area_0)
+		y_crit = r_interpol(areaTable,elevTable,nel,area_c)
+
+
+		!print*, 'check point 0', So, S_0,dsc,width_0, y_norm-z(i), y_crit-z(i), area_n, area_norm, area_c, fro
+		!print*, 'check point -1', dsc, y_norm-z(1),  y_crit-z(1)
+		!pause 500
+end subroutine normal_crit_y
+
+
+subroutine calc_q_sk_multi(i,currentQ,multipli)
+
+    use arrays_module
+
+	implicit none
+
+	integer,intent(in) :: i
+	real,intent(in) :: currentQ
+	real,intent(out) :: multipli
+	integer :: pp, tableLength
+	real :: r_interpo_nn
+
+	multipli = 1.0
+	do pp = 1, size(Q_sk_tableEntry)
+		if (  ( eachQSKtableNodeRange(1,pp) - i) * ( eachQSKtableNodeRange(2,pp) - i) .le. 0 ) then
+			tableLength = Q_sk_tableEntry(pp)
+			multipli = r_interpo_nn(Q_Sk_Table(1,1:tableLength,pp),Q_Sk_Table(2,1:tableLength,pp),tableLength,currentQ)
+		end if
+	end do
+
+end subroutine calc_q_sk_multi
+
