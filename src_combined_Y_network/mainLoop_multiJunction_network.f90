@@ -33,7 +33,7 @@ program mesh
 
     real(kind=4) :: r_interpo_nn
 
-    character(len=128) :: output_path, other_input
+    character(len=128) :: output_path, other_input, ndep_path
     character(len=128) :: path
 
     !real(kind=4) :: pere(500)
@@ -56,7 +56,9 @@ program mesh
     !open(unit=1,file="../Multijunction_Network/input/input_multiJunction.txt",status='unknown')
     !open(unit=1,file="../Multijunction_Network/input/input_multiJunction_NHD.txt",status='unknown')
     !open(unit=1,file="../Multijunction_Network/input/input_multiJunction_NHD_mixedRouting.txt",status='unknown')
-    open(unit=1,file="../Multijunction_Network/input/input_multiJunction_NHD_mixedRouting_8channel.txt",status='unknown')
+    !open(unit=1,file="../Multijunction_Network/input/input_multiJunction_NHD_mixedRouting_8channel.txt",status='unknown')
+    !open(unit=1,file="../Multijunction_Network/input/input_multiJunction_NHD_mixedRouting_11channel.txt",status='unknown')
+    open(unit=1,file="../Multijunction_Network/input/input_multiJunction_NHD_mixedRouting_16channel.txt",status='unknown')
 
     print*, 'Reading input file'
 
@@ -218,6 +220,8 @@ program mesh
     end do
     ! Reading Q-SK table data data ends
 
+    read(1,*) ndep_path ! Reading the location of network file
+
     close (1)       ! all input data read is finished
 
     ! Allocate arrays
@@ -290,24 +294,51 @@ program mesh
 
 
 
-    !!! Code from DongHa
-
+    !!! This part is the code from DongHa for network and then modified by Nazmul
+    open(unit=80, file=trim(ndep_path), status='unknown')
+    ! this file contains the information for network connectivity.
+    ! left column shows river reach number (j) and
+    ! the right column shows  the number of links that are immediately upstream of link j
+    ! skip one header line
+    read(80, *)
+    do j = 1,nlinks
+        read(80, *) x, ndep(j)
+    end do
 
     ! ++++ Y channel connectivity ++++++!
     !* the number of links that are immediately upstream of link j
-    ndep(1)=0; ndep(2)=0; ndep(3)=0; ndep(4)=0; ndep(5)=2; ndep(6)=3; ndep(7)=1; ndep(8)=1
+    !ndep(1)=0; ndep(2)=0; ndep(3)=0; ndep(4)=0; ndep(5)=2; ndep(6)=3; ndep(7)=1; ndep(8)=1
 
-    !* link number of k_th link that is immediately upstream of link j
-    uslinks(1,1)=NAnum  !not available
-    uslinks(1,2)=NAnum  !not available
-    uslinks(1,3)=NAnum
-    uslinks(1,4)=NAnum
-    uslinks(1,5)=1; uslinks(2,5)=2
-    uslinks(1,6)=3; uslinks(2,6)=4; uslinks(3,6)=5
-    uslinks(1,7)=6
-    uslinks(1,8)=7
+
+    allocate(uslinks(maxval(ndep),nlinks))
+    uslinks = NAnum
+    ! Next part of the ndep file reads the link number of k_th link that is immediately upstream of link j
+    ! The first column is the link number j, and the rest of the columns are the k_th upstream link of j
+    ! skip one header line or blank line
+    read(80, *)
+    do j = 1,nlinks
+        read(80,*) x, (uslinks(i,j), i=1, ndep(j))
+    end do
+
+   ! uslinks(1,1)=NAnum  !not available
+   ! uslinks(1,2)=NAnum  !not available
+   ! uslinks(1,3)=NAnum
+   ! uslinks(1,4)=NAnum
+   ! uslinks(1,5)=1; uslinks(2,5)=2
+   ! uslinks(1,6)=3; uslinks(2,6)=4; uslinks(3,6)=5
+   ! uslinks(1,7)=6
+   ! uslinks(1,8)=7
+
+
+    ! Next part of the ndep file reads the link number of k_th link that is immediately downstream of link j
+    ! skip one header line or blank line
+    dslink = 0
+    read(80, *)
+    do j = 1,nlinks
+        read(80,*) x, dslink(j)
+    end do
     !* link number that is immediately downstream of link j
-    dslink(1)=5; dslink(2)=5; dslink(3)=6; dslink(4)=6; dslink(5)=6; dslink(6)=7; dslink(7)=8
+    ! dslink(1)=5; dslink(2)=5; dslink(3)=6; dslink(4)=6; dslink(5)=6; dslink(6)=7; dslink(7)=8
 
 
     !++++ in case of one channel +++!
@@ -321,7 +352,9 @@ program mesh
 
 
 
-
+    ! Next part of the ndep file reads the boundary condition of j_th link
+    ! the first coulmn is the link number j, the 2nd column indicates the u/s condition of j,
+    ! and the 3rd column indicates the d/s condition of j
     !* when data at either upper or lower end of link j is available,
     !* instrdflag(j,1)=1 when water level data is known at the upper end of link j
     !* instrdflag(j,1)=2 when discharge data is known
@@ -331,17 +364,26 @@ program mesh
     !* instrdflag(j,2)=2 when discharge data is known
     !* instrdflag(j,2)=3 when rating curve is known
     !* Otherwise, instrdflag(j,1/2)=0
-    !! Nazmul: This part is currently hard coded, but we need to move it in a flexible manner.
 
 
-    instrdflag(1,1)=2; instrdflag(1,2)=0    !*discharge data is known at the upper end of link 1
-    instrdflag(2,1)=2; instrdflag(2,2)=0    !*discharge is known at the upper end of link 2
-    instrdflag(3,1)=2; instrdflag(3,2)=0    !*discharge data is known at the upper end of link 3
-    instrdflag(4,1)=2; instrdflag(4,2)=0    !*discharge data is known at the upper end of link 4
-    instrdflag(5,1)=0; instrdflag(5,2)=0    !*discharge data is known at the upper end of link 5
-    instrdflag(6,1)=0; instrdflag(6,2)=0    !*stage data is known at the lower end of link 6
-    instrdflag(7,1)=0; instrdflag(7,2)=0    !*stage data is known at the lower end of link 7
-    instrdflag(8,1)=0; instrdflag(8,2)=1    !*stage data is known at the lower end of link 8
+    ! skip one header line or blank line
+    read(80, *)
+    do j = 1,nlinks
+        read(80, *) x, instrdflag(j,1), instrdflag(j,2)
+    end do
+
+
+
+   ! instrdflag(1,1)=2; instrdflag(1,2)=0    !*discharge data is known at the upper end of link 1
+   ! instrdflag(2,1)=2; instrdflag(2,2)=0    !*discharge is known at the upper end of link 2
+   ! instrdflag(3,1)=2; instrdflag(3,2)=0    !*discharge data is known at the upper end of link 3
+   ! instrdflag(4,1)=2; instrdflag(4,2)=0    !*discharge data is known at the upper end of link 4
+   ! instrdflag(5,1)=0; instrdflag(5,2)=0    !*discharge data is known at the upper end of link 5
+   ! instrdflag(6,1)=0; instrdflag(6,2)=0    !*stage data is known at the lower end of link 6
+   ! instrdflag(7,1)=0; instrdflag(7,2)=0    !*stage data is known at the lower end of link 7
+   ! instrdflag(8,1)=0; instrdflag(8,2)=1    !*stage data is known at the lower end of link 8
+
+    close(80)
 
     ! Nazmul: Need to create a connectivity table like the following:
     ! p=Junction sequence no, q= number of river reaches connected to that junction, (riverReachSequenceNoInThatJunction(i),i=1,q), (streamOrderOfEachRivers(i),i=1,q)
@@ -599,7 +641,6 @@ program mesh
             !*total water areas at n+1 at the end nodes of upstream links that join link j
             areasum=0.0
             do k=1, ndep(j)
-
                 linknb=uslinks(k,j); nodenb=nx1(linknb)
                 areasum=areasum + oldArea(nodenb,linknb) + dap(nodenb,linknb)
                 !print*, 'areasum=', areasum!; pause
@@ -607,6 +648,9 @@ program mesh
             dqp(1,j)=0.0;
             yav=0.0
             sumOldQ = 0.0
+
+
+
 
 
 
@@ -739,14 +783,15 @@ program mesh
 
 
         !! Forcing all computation to diffusive routing
-        higherLimitCount(1) = ncomp; lowerLimitCount(1) = ncomp
-        higherLimitCount(2) = ncomp; lowerLimitCount(2) = ncomp
-        higherLimitCount(3) = ncomp; lowerLimitCount(3) = ncomp
-        higherLimitCount(4) = ncomp; lowerLimitCount(4) = ncomp
-        higherLimitCount(5) = ncomp; lowerLimitCount(5) = ncomp
-        higherLimitCount(6) = ncomp; lowerLimitCount(6) = ncomp
-        higherLimitCount(7) = ncomp; lowerLimitCount(7) = ncomp
-        higherLimitCount(8) = ncomp; lowerLimitCount(8) = ncomp
+       ! higherLimitCount(1) = ncomp; lowerLimitCount(1) = ncomp
+       ! higherLimitCount(2) = ncomp; lowerLimitCount(2) = ncomp
+       ! higherLimitCount(3) = ncomp; lowerLimitCount(3) = ncomp
+       ! higherLimitCount(4) = ncomp; lowerLimitCount(4) = ncomp
+       ! higherLimitCount(5) = ncomp; lowerLimitCount(5) = ncomp
+       ! higherLimitCount(6) = ncomp; lowerLimitCount(6) = ncomp
+       ! higherLimitCount(7) = ncomp; lowerLimitCount(7) = ncomp
+       ! higherLimitCount(8) = ncomp; lowerLimitCount(8) = ncomp
+        higherLimitCount = ncomp
 
 
 

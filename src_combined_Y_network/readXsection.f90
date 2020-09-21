@@ -12,7 +12,7 @@ subroutine readXsection(k,rmanning,timesDepth,num_reach)
     real, intent(in) :: rmanning, timesDepth
 
     real xcs(maxTableLength), ycs(maxTableLength), el1(nel),a1(nel),peri1(nel),redi1(nel)
-    real conv1(nel), tpW1(nel), diffArea(nel), newI1(nel), deffPere(nel), newdPdA(nel)
+    real conv1(nel), tpW1(nel), diffArea(nel), newI1(nel), diffPere(nel), newdPdA(nel)
     integer i_start(nel), i_end(nel), i_area, i_find, i, j, jj, num
     real el_min, el_max, el_range, el_incr, el_now, x1, y1, x2, y2, x_start, x_end, waterElev
     real f2m, cal_area, cal_peri, cal_topW, cal_dist, cal_tri_area, cal_multi_area, cal_perimeter, diffAreaCenter
@@ -157,13 +157,13 @@ subroutine readXsection(k,rmanning,timesDepth,num_reach)
 
         if(j.eq.1) then
           diffArea(j)=a1(j)
-          deffPere(j)=peri1(j)
+          diffPere(j)=peri1(j)
         else
           diffArea(j)=a1(j)-a1(j-1)
-          deffPere(j)=peri1(j)-peri1(j-1)
+          diffPere(j)=peri1(j)-peri1(j-1)
         endif
 
-        newdPdA(j)=deffPere(j)/diffArea(j)
+        newdPdA(j)=diffPere(j)/diffArea(j)
 
         waterElev=el1(j)
 

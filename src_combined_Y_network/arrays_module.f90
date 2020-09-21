@@ -29,7 +29,7 @@ module arrays_module
     real, allocatable :: eei(:), ffi(:), exi(:), fxi(:), qpx(:,:), qcx(:)
 
     real, allocatable :: USBoundary(:,:,:), DSBoundary(:,:,:)
-    integer, allocatable :: upBoundTableEntry(:), downBoundTableEntry(:)
+    integer, allocatable :: upBoundTableEntry(:), downBoundTableEntry(:) !, normalDepth(:)
 ! change for unsteady flow
     real, allocatable :: pere(:,:),dpda(:)
 
@@ -55,6 +55,8 @@ module arrays_module
     integer, allocatable :: currentROutingDiffusive(:), notSwitchRouting(:)
     real :: minDx, maxCelerity
 
+    integer, allocatable :: currentRoutingNormal(:,:), routingNotChanged(:,:)
+
 contains
 
     ! Allocate storage for all of the arrays in this module based on the number
@@ -71,9 +73,10 @@ contains
 ! change for unsteady flow
 
         allocate(bo(num_points,totalChannels))
-
         allocate(pere(num_points,totalChannels))
         allocate(dpda(num_points))
+
+        !allocate(normalDepth(totalChannels))    !! this parameter indicates which channel will have full diffusive or partial diffusive routing.
 
 
         allocate(areap(num_points,totalChannels))
@@ -129,7 +132,7 @@ contains
 
         allocate(ndep(totalChannels))
         allocate(dslink(totalChannels))
-        allocate(uslinks(num_points,totalChannels))
+        !allocate(uslinks(num_points,totalChannels))
 
         allocate(instrdflag(totalChannels,2))
 
@@ -141,6 +144,8 @@ contains
         allocate(newArea(num_points, totalChannels))
         allocate(oldY(num_points, totalChannels))
         allocate(newY(num_points, totalChannels))
+
+        oldQ = -999; oldY = -999; newQ = -999; newY = -999
 
         allocate(lateralFlowTable(2, maxTableEntry2, totalLatFlow, totalChannels))
         allocate(dataInEachLatFlow(totalLatFlow, totalChannels))
@@ -167,9 +172,15 @@ contains
         allocate(dimensionless_Di(num_points-1,totalChannels))
         allocate(dimensionless_Fc(num_points-1,totalChannels))
         allocate(dimensionless_D(num_points-1,totalChannels))
+        dimensionless_Cr = -999; dimensionless_Fo = -999; dimensionless_Fi = -999
+        dimensionless_Di = -999; dimensionless_Fc = -999; dimensionless_D = -999
 
         allocate(lowerLimitCount(totalChannels))
         allocate(higherLimitCount(totalChannels))
+
+
+        allocate(currentRoutingNormal(num_points-1,totalChannels))
+        allocate(routingNotChanged(num_points-1,totalChannels))
 
     end subroutine setup_arrays
 
