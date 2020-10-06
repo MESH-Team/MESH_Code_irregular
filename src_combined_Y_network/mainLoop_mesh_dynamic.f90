@@ -7,6 +7,7 @@ subroutine mesh_dynamic_predictor(dtini_given, t0, t, tfin, saveInterval,j)
     use arrays_section_module
     use xsec_attribute_module
     use sgate_module
+    use subtools
 
     implicit none
 
@@ -15,7 +16,7 @@ subroutine mesh_dynamic_predictor(dtini_given, t0, t, tfin, saveInterval,j)
 
     integer(kind=4) :: i, igate, pp, k, nodenb, linknb
     real(kind=4) :: cour, frds, areasum, yk_ncomp, yav, areak_ncomp, areav, sumOldQ
-    real(kind=4) :: xt, r_interpol, r_interpo_nn
+    real(kind=4) :: xt, r_interpo_nn
     real(kind=4) :: q_sk_multi
 
 
@@ -77,6 +78,7 @@ subroutine mesh_dynamic_corrector(dtini_given, t0, t, tfin, saveInterval,j)
     use arrays_section_module
     use xsec_attribute_module
     use sgate_module
+    use subtools
 
     implicit none
 
@@ -85,7 +87,7 @@ subroutine mesh_dynamic_corrector(dtini_given, t0, t, tfin, saveInterval,j)
 
     integer(kind=4) :: i, k, igate, pp, tableLength, linknb_ds, linknb_us, nodenb
     real(kind=4) :: da, dq, sfi, cour, currentQ,linknb, qnp1_us, qnp1_ds, qsum
-    real(kind=4) :: xt, r_interpol, r_interpo_nn
+    real(kind=4) :: xt, r_interpo_nn
     real(kind=4) :: q_sk_multi
 
 
@@ -151,7 +153,12 @@ subroutine mesh_dynamic_corrector(dtini_given, t0, t, tfin, saveInterval,j)
     !       interpolate the cross section attributes based on FINAL CALCULATED area
             xt=newArea(i,j)
             !print*, i, j, ncomp, newArea(35,1),'651'
-            newY(i,j)=r_interpol(areaTable,elevTable,nel,xt)
+            call r_interpol(areaTable,elevTable,nel,xt,newY(i,j))
+
+			if (newY(i,j) .eq. -9999) then
+				print*, 'At j = ',j,', i = ',i, 'time =',t, 'interpolation of newY was not possible'
+				stop
+			end if
             !print*, i, j, ncomp, newArea(35,1),'652'
 !-------------------------------------
 

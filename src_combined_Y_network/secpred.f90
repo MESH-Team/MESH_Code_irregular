@@ -14,7 +14,7 @@ subroutine secpred(j)
     integer :: i, pp, tableLength
     real(kind=4) :: beds, fs, hy, yyn, yyn_1, temp1, temp2, new_I2
     real(kind=4) :: xt, q_sk_multi, currentQ
-    real(kind=4) :: r_interpol, r_interpo_nn
+    real(kind=4) :: r_interpo_nn
 
     !change 20191122
     ci1=0
@@ -51,31 +51,23 @@ subroutine secpred(j)
             !areap(i) = 0.01
             print*, 'At i = ', i , ' pred area is negative'
         else
-            yyn    =r_interpol(areaTable,elevTable,nel,xt)
+            call r_interpol(areaTable,elevTable,nel,xt,yyn)
         end if
 
         depth(i) = yyn - z(i,j)
         xt = yyn
 
-        pere(i,j)=r_interpol(elevTable,pereTable,nel,xt)
-        hy     =r_interpol(elevTable,rediTable,nel,xt)
+        call r_interpol(elevTable,pereTable,nel,xt,pere(i,j))
+        call r_interpol(elevTable,rediTable,nel,xt,hy)
         !co(i)  =r_interpol(elevTable,convTable,nel,xt)
         currentCubicDepth=(elevTable-z(i,j))**3
-        co(i)  =q_sk_multi * r_interpol(currentCubicDepth,convTable,nel,(xt-z(i,j))**3.0)
-        bo(i,j)  =r_interpol(elevTable,topwTable,nel,xt)
+        call r_interpol(currentCubicDepth,convTable,nel,(xt-z(i,j))**3.0,co(i))
+        call r_interpol(elevTable,topwTable,nel,xt,bo(i,j))
 !        ci1(i) =r_interpol(areaTable,nwi1Table,nel,xt)
-        ci1(i) =r_interpol(currentSquareDepth,nwi1Table,nel,(depth(i))**2)
-        dpda(i)=r_interpol(elevTable,dPdATable,nel,xt)
+        call r_interpol(currentSquareDepth,nwi1Table,nel,(depth(i))**2,ci1(i))
+        call r_interpol(elevTable,dPdATable,nel,xt,dpda(i))
 
         currentQ = qp(i,j)
-
-!        q_sk_multi = 1.0
-!        do pp = 1, noQSKtable(j)
-!            if (  ( eachQSKtableNodeRange(1,pp,j) - i) * ( eachQSKtableNodeRange(2,pp,j) - i) .le. 0 ) then
-!				tableLength = Q_sk_tableEntry(pp,j)
-!                q_sk_multi = r_interpo_nn(Q_Sk_Table(1,1:tableLength,pp,j),Q_Sk_Table(2,1:tableLength,pp,j),tableLength,currentQ)
-!            end if
-!        end do
 
         call calc_q_sk_multi(i,j,currentQ,q_sk_multi)
 
@@ -85,8 +77,8 @@ subroutine secpred(j)
 
 ! I2 opposite direction calculated as interpolation start
         xt=areap(i+1,j)
-        temp1 = r_interpol(currentSquareDepth,I2Tablec,nel,(yyn-z(i,j))**2)
-        temp2 = r_interpol(downstreamSquareDepth,downstreamI2Tablep, nel,(yyn_1-z(i+1,j))**2)
+        call r_interpol(currentSquareDepth,I2Tablec,nel,(yyn-z(i,j))**2,temp1)
+        call r_interpol(downstreamSquareDepth,downstreamI2Tablep, nel,(yyn_1-z(i+1,j))**2,temp2)
         new_I2 = (temp1+temp2)/2.0
 ! I2 opposite direction calculated as interpolation end
 

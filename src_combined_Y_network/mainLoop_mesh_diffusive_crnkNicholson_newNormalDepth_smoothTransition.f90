@@ -20,7 +20,7 @@ subroutine mesh_diffusive_forward(dtini_given, t0, t, tfin, saveInterval,j)
     real(kind=4) :: a1, a2, a3, a4, b1, b2, b3, b4, dd1, dd2, dd3, dd4, h1, h2, h3, h4, xt
     real(kind=4) :: qy, qxy, qxxy, qxxxy, ppi, qqi, rri, ssi, sxi, mannings, Sb, width
 
-    real(kind=4) :: cour, cour2, q_sk_multi, sfi, r_interpol_time, r_interpo_nn, r_interpol, temp
+    real(kind=4) :: cour, cour2, q_sk_multi, sfi, r_interpol_time, r_interpo_nn, temp
 
     real(kind=4) :: y_norm_ds, y_crit_ds, S_ncomp, frds, area_0, width_0, hydR_0, errorY, currentQ
     integer :: tableLength
@@ -154,7 +154,7 @@ subroutine mesh_diffusive_backward(dtini_given, t0, t, tfin, saveInterval,j)
     real(kind=4) :: a1, a2, a3, a4, b1, b2, b3, b4, dd1, dd2, dd3, dd4, h1, h2, h3, h4, xt
     real(kind=4) :: qy, qxy, qxxy, qxxxy, ppi, qqi, rri, ssi, sxi, mannings, Sb, width, slope
 
-    real(kind=4) :: cour, cour2, q_sk_multi, sfi, r_interpol_time, r_interpo_nn, r_interpol, temp
+    real(kind=4) :: cour, cour2, q_sk_multi, sfi, r_interpol_time, r_interpo_nn, temp
 
     real(kind=4) :: y_norm_ds, y_crit_ds, S_ncomp, frds, area_0, width_0, hydR_0, errorY, currentQ, stg1, stg2
     integer :: tableLength, jj
@@ -172,9 +172,16 @@ subroutine mesh_diffusive_backward(dtini_given, t0, t, tfin, saveInterval,j)
         areaTable = xsec_tab(2,:,ncomp,j)
         topwTable = xsec_tab(6,:,ncomp,j)
 
-        newArea(ncomp,j) = r_interpol(elevTable,areaTable,nel,newY(ncomp,j))
 
-        bo(ncomp,j) = r_interpol(elevTable,topwTable,nel,newY(ncomp,j))
+
+
+        call r_interpol(elevTable,areaTable,nel,newY(ncomp,j),newArea(ncomp,j))
+		if (newArea(ncomp,j) .eq. -9999) then
+			print*, 'At j = ',j,', i = ',i, 'time =',t, 'interpolation of newArea was not possible'
+			stop
+		end if
+
+        call r_interpol(elevTable,topwTable,nel,newY(ncomp,j),bo(ncomp,j))
         frds = abs(qp(ncomp,j))/sqrt(grav*( newArea(ncomp,j) )**3.0/bo(ncomp,j))
 
 
@@ -191,6 +198,7 @@ subroutine mesh_diffusive_backward(dtini_given, t0, t, tfin, saveInterval,j)
         !!! checking if d/s is critical
         !!! if d/s boundary is supercritical, the given boundary is ignored and normal depth is applied
         if (frds .ge. 1.0 ) newY(ncomp,j) = y_norm_ds
+        if (frds .ge. 1.0 ) newArea(ncomp,j) = area_norm
 
 
       !  if ((dimensionless_D(ncomp-1,j) .lt. 1) .and. (j .eq. nlinks)) then
@@ -219,11 +227,13 @@ subroutine mesh_diffusive_backward(dtini_given, t0, t, tfin, saveInterval,j)
             currentCubicDepth=(elevTable-z(i,j))**3
 
             !co(i)  =q_sk_multi * r_interpol(elevTable,convTable,nel,xt)
-            co(i)  =q_sk_multi * r_interpol(currentCubicDepth,convTable,nel,(newY(i,j)-z(i,j))**3.0)
+            call r_interpol(currentCubicDepth,convTable,nel,(newY(i,j)-z(i,j))**3.0,co(i))
+			co(i) =q_sk_multi * co(i)
 
-            newArea(i,j) = r_interpol(elevTable,areaTable,nel,xt)
-            pere(i,j) = r_interpol(elevTable,pereTable,nel,xt)
-            bo(i,j) = r_interpol(elevTable,topwTable,nel,xt)
+
+            call r_interpol(elevTable,areaTable,nel,xt,newArea(i,j))
+            call r_interpol(elevTable,pereTable,nel,xt,pere(i,j))
+            call r_interpol(elevTable,topwTable,nel,xt,bo(i,j))
 
             sfi = ( qp(i,j) / co(i) ) ** 2.0
 
@@ -237,18 +247,29 @@ subroutine mesh_diffusive_backward(dtini_given, t0, t, tfin, saveInterval,j)
 
             if (i .gt. 1) then
                 !! If routing method is changed just a few time steps ago, we maintain the same routing to avoid oscillation
-
-
-                    !! If DSP: D is below 1.0, we switch to partial diffusive routing
-                    if (dimensionless_D(i-1,j) .lt. 0.9) then
+                if ( (routingNotChanged(i-1,j) .lt. minNotSwitchRouting2) .and. (currentRoutingNormal(i-1,j) .lt. 3) ) then
+                    if (currentRoutingNormal(i-1,j) .eq. 0) then
+                        newY(i-1,j) = newY(i,j) + sign ( sfi, qp(i,j) ) * dx(i-1,j)
+                    else if (currentRoutingNormal(i-1,j) .eq. 1) then
                         slope = (z(i-1,j)-z(i,j))/dx(i-1,j)
+                        if (slope .le. 0.0001) slope = 0.0001
                         call calc_q_sk_multi(i-1,j,qp(i-1,j),q_sk_multi)
                         ! applying normal depth to all the nodes
                         call normal_crit_y(i-1, j, q_sk_multi, slope, qp(i-1,j), newY(i-1,j), temp, newArea(i-1,j), temp)
-
+                    end if
+                else
+                    !! If DSP: D is below 1.0, we switch to partial diffusive routing
+                    if (dimensionless_D(i-1,j) .lt. 0.9) then
+                        slope = (z(i-1,j)-z(i,j))/dx(i-1,j)
+                        if (slope .le. 0.0001) slope = 0.0001
+                        call calc_q_sk_multi(i-1,j,qp(i-1,j),q_sk_multi)
+                        ! applying normal depth to all the nodes
+                        call normal_crit_y(i-1, j, q_sk_multi, slope, qp(i-1,j), newY(i-1,j), temp, newArea(i-1,j), temp)
+                        !if (slope .eq. 0) slope = TOLERANCE
                          ! Book-keeping: changing from full diffusive to partial diffusive
                         if ( currentRoutingNormal(i-1,j) .ne. 1 ) routingNotChanged(i-1,j) = 0
                         currentRoutingNormal(i-1,j) = 1
+
 
                     !! If DSP: D is not below 1.0, we switch to full diffusive routing
                     elseif ( (dimensionless_D(i-1,j) .ge. 0.9) .and. (dimensionless_D(i-1,j) .lt. 1.0) ) then
@@ -273,6 +294,7 @@ subroutine mesh_diffusive_backward(dtini_given, t0, t, tfin, saveInterval,j)
 
                     end if
                 end if
+            end if
 
                 ! Book-keeping: Counting the number as for how many time steps the routing method is unchanged
                 routingNotChanged(i-1,j) = routingNotChanged(i-1,j) + 1

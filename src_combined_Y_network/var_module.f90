@@ -8,7 +8,7 @@ module var_module
     real :: vv
     real :: dtini
 
-    real :: frus2, S_0, y_norm_us, y_crit_us, area_norm, area_crit, minNotSwitchRouting
+    real :: frus2, S_0, y_norm_us, y_crit_us, area_norm, area_crit, minNotSwitchRouting, minNotSwitchRouting2
 
     !integer, allocatable :: nx1(:), noQSKtable(:)
     integer :: ncomp

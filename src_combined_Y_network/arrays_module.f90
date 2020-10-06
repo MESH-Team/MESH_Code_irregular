@@ -47,7 +47,7 @@ module arrays_module
     integer, allocatable :: Q_sk_tableEntry(:,:), noLatFlow(:), noQSKtable(:)
     real, allocatable :: eachQSKtableNodeRange(:,:,:), Q_sk_Table(:,:,:,:)
 
-    real, allocatable :: lowerLimitCount(:), higherLimitCount(:)
+    real, allocatable :: lowerLimitCount(:), higherLimitCount(:), volRemain(:,:)
 
     character(len=128), allocatable :: downstream_path(:), xSection_path(:), manning_strickler_path(:), upstream_path(:),dx_path(:)
     character(len=128), allocatable :: QSKtablePath(:), lateralFlow_path(:)
@@ -119,6 +119,7 @@ contains
         allocate(dt(num_points))
         allocate(ityp(num_points))
         allocate(dx(num_points-1,totalChannels))
+        allocate(volRemain(num_points-1,totalChannels))
 
         allocate(froud(num_points))
 

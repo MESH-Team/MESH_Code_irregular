@@ -21,7 +21,7 @@ program mesh
     real(kind=4) :: qnp1_ds, qnp1_us, qsum, y_ds
 
     real(kind=4) :: cour, da, dq, x, saveInterval, width
-    real(kind=4) :: qn, xt, r_interpol, maxCourant, dtini_given, nodenb, linknb
+    real(kind=4) :: qn, xt, maxCourant, dtini_given, nodenb, linknb
     real(kind=4) :: frds, areasum, yk_ncomp, yav, areak_ncomp, areav, sumOldQ, currentQ, area_ds
     real(kind=4) :: arean, areac, hyrdn, hyrdc, perimn, perimc, qcrit, s0ds, timesDepth, latFlowValue
 
@@ -58,7 +58,11 @@ program mesh
     !open(unit=1,file="../Multijunction_Network/input/input_multiJunction_NHD_mixedRouting.txt",status='unknown')
     !open(unit=1,file="../Multijunction_Network/input/input_multiJunction_NHD_mixedRouting_8channel.txt",status='unknown')
     !open(unit=1,file="../Multijunction_Network/input/input_multiJunction_NHD_mixedRouting_11channel.txt",status='unknown')
-    open(unit=1,file="../Multijunction_Network/input/input_multiJunction_NHD_mixedRouting_16channel.txt",status='unknown')
+    !open(unit=1,file="../Multijunction_Network/input/input_multiJunction_NHD_mixedRouting_16channel.txt",status='unknown')
+    open(unit=1,file="../Multijunction_Network/input/input_multiJunction_NHD_mixedRouting_29channel.txt",status='unknown')
+    !open(unit=1,file="../Synthetic_Network_Test/input",status='unknown')
+    !open(unit=1,file="../Rectangular_Y_Channel/input/input_naturalChannel_exact.txt",status='unknown')
+
 
     print*, 'Reading input file'
 
@@ -443,7 +447,11 @@ program mesh
             ncompElevTable = xsec_tab(1,:,ncomp,j)
             ncompAreaTable = xsec_tab(2,:,ncomp,j)
             xt=oldY(ncomp,j)
-            oldArea(ncomp,j)=r_interpol(ncompElevTable,ncompAreaTable,nel,xt)
+            call r_interpol(ncompElevTable,ncompAreaTable,nel,xt,oldArea(ncomp,j))
+			if (oldArea(ncomp,j) .eq. -9999) then
+				print*, 'At j = ',j,', i = ',i, 'time =',t, 'interpolation of oldArea(ncomp,j) was not possible'
+				stop
+			end if
         end if
     end do
 
@@ -465,7 +473,11 @@ program mesh
         do i=1,ncomp
             elevTable = xsec_tab(1,1:nel,i,j)
             areaTable = xsec_tab(2,1:nel,i,j)
-            oldArea(i,j)=r_interpol(elevTable,areaTable,nel,oldY(i,j))
+            call r_interpol(elevTable,areaTable,nel,oldY(i,j),oldArea(i,j))
+			if (oldArea(i,j) .eq. -9999) then
+				print*, 'At j = ',j,', i = ',i, 'time =',t, 'interpolation of oldArea(i,j) was not possible'
+				stop
+			end if
         enddo
     end do
 
@@ -481,6 +493,13 @@ program mesh
             end do
 303         close(89)
             dataInEachLatFlow(i,j) = n-1
+        end do
+    end do
+    volRemain = -999
+    do j=1, nlinks
+        ncomp = nx1(j)
+        do i=1,ncomp-1
+            volRemain(i,j) = (oldArea(i,j)+oldArea(i+1,j))/2.0*dx(i,j)
         end do
     end do
 
@@ -533,6 +552,9 @@ program mesh
     path = trim(output_path) // 'routingNotChanged.txt'
     open(unit=99, file=trim(path), status='unknown')
 
+    path = trim(output_path) // 'volRemain.txt'
+    open(unit=991, file=trim(path), status='unknown')
+
 
 	! Some essential initial parameters for Diffusive Wave
 	theta = 1.0
@@ -577,13 +599,15 @@ program mesh
         write(97, *) t*60.0, j, currentROutingDiffusive(j)
         write(98, *) t*60.0, j, (currentRoutingNormal(i,j), i=1, maxval(nx1)-1)
         write(99, *) t*60.0, j, (routingNotChanged(i,j), i=1, maxval(nx1)-1)
+        write(991, *) t*60.0, j, (volRemain(i,j), i=1, maxval(nx1)-1)
 
     end do
 
 
     frus2 = 9999.
     notSwitchRouting=0
-    minNotSwitchRouting = 30
+    minNotSwitchRouting = 2         ! works between Dynamic and Diffusive switching
+    minNotSwitchRouting2 = 1        ! works between full Diffusive and partial Diffusive switching
     !
     ! Loop on time
     !
@@ -596,6 +620,8 @@ program mesh
     qqn = 1
 
     do j = 1, nlinks
+
+        !print*, 'running ', j
 
         ncomp = nx1(j)
 
@@ -623,7 +649,11 @@ program mesh
             ncompElevTable = xsec_tab(1,:,ncomp,j)
             ncompAreaTable = xsec_tab(2,:,ncomp,j)
             xt=newY(ncomp,j)
-            newArea(ncomp,j)=r_interpol(ncompElevTable,ncompAreaTable,nel,xt)
+            call r_interpol(ncompElevTable,ncompAreaTable,nel,xt,newArea(ncomp,j))
+			if (newArea(ncomp,j) .eq. -9999) then
+				print*, 'At j = ',j,', i = ',i, 'time =',t, 'interpolation of newArea(ncomp,j) was not possible'
+				stop
+			end if
 
             qqn = qqn +1
 
@@ -669,7 +699,7 @@ program mesh
                 elevTable = xsec_tab(1,:,nodenb,linknb)
                 areaTable = xsec_tab(2,:,nodenb,linknb)
                 !print*, 'k, areak_ncomp',k, areak_ncomp!; pause
-                yk_ncomp = r_interpol(areaTable,elevTable,nel,areak_ncomp)
+                call r_interpol(areaTable,elevTable,nel,areak_ncomp,yk_ncomp)
                 !* weighted average based on areas at the end nodes of upstream link ks
                 yav = yav + (areak_ncomp/areasum)*yk_ncomp
                 !print*, 'yav', yav
@@ -683,7 +713,7 @@ program mesh
             !* Area estimated for time n+1
             elevTable = xsec_tab(1,:,1,j)
             areaTable = xsec_tab(2,:,1,j)
-            areav = r_interpol(elevTable,areaTable,nel,yav)
+            call r_interpol(elevTable,areaTable,nel,yav,areav)
             dap(1,j) = areav - oldArea(1,j)
         else            ! There are no links at the upstream of the reach. Example: j = 1, 2
             ! Set upstream discharge
@@ -723,8 +753,9 @@ program mesh
                     lateralFlowTable(2, 1:dataInEachLatFlow(i,j), i,j),dataInEachLatFlow(i,j),t)
                 !print*, t, latFlowValue
             elseif (latFlowType(i,j) .eq. 2) then
-                latFlowValue = r_interpol(lateralFlowTable(1, 1:dataInEachLatFlow(i,j), i,j), &
-                    lateralFlowTable(2, 1:dataInEachLatFlow(i,j), i,j),dataInEachLatFlow(i,j),oldQ(latFlowLocations(i,j)-1,j))
+                call r_interpol(lateralFlowTable(1, 1:dataInEachLatFlow(i,j), i,j), &
+                    lateralFlowTable(2, 1:dataInEachLatFlow(i,j), i,j),dataInEachLatFlow(i,j), &
+                    oldQ(latFlowLocations(i,j)-1,j),latFlowValue)
             endif
 
 
@@ -791,7 +822,7 @@ program mesh
        ! higherLimitCount(6) = ncomp; lowerLimitCount(6) = ncomp
        ! higherLimitCount(7) = ncomp; lowerLimitCount(7) = ncomp
        ! higherLimitCount(8) = ncomp; lowerLimitCount(8) = ncomp
-        higherLimitCount = ncomp
+        higherLimitCount = ncomp; lowerLimitCount = ncomp
 
 
 
@@ -826,6 +857,8 @@ program mesh
             end if
         end if
 
+        notSwitchRouting(j) = notSwitchRouting(j) + 1
+
     end do  ! end off j loop for predictor
 
 
@@ -835,6 +868,7 @@ program mesh
     do j =  nlinks,1,-1
 
         !print*, j
+
 
         ncomp = nx1(j)
 
@@ -854,13 +888,13 @@ program mesh
                 xt = newArea(1,linknb)
                 elevTable = xsec_tab(1,:,1,linknb)
                 areaTable = xsec_tab(2,:,1,linknb)
-                y_ds=r_interpol(areaTable,elevTable,nel,xt)
+                call r_interpol(areaTable,elevTable,nel,xt,y_ds)
                 newY(ncomp,j)= newY(1,linknb)
 
                 xt = newY(ncomp,j)
                 elevTable = xsec_tab(1,:,ncomp,j)
                 areaTable = xsec_tab(2,:,ncomp,j)
-                newArea(ncomp,j)=r_interpol(elevTable,areaTable,nel,xt)
+                call r_interpol(elevTable,areaTable,nel,xt,newArea(ncomp,j))
                 !dmy=area(1,linknb)+dac(1,linknb)
 
                 dac(ncomp,j)=2*(newArea(ncomp,j)-oldArea(ncomp,j))-dap(ncomp,j)
@@ -928,10 +962,16 @@ program mesh
         endif
     enddo
 
+    do j=1, nlinks
+        ncomp = nx1(j)
+        do i=1,ncomp-1
+            volRemain(i,j) = (newArea(i,j)+newArea(i+1,j))/2.0*dx(i,j)
+        end do
+    end do
+
 
 
     t = t + dtini/60.
-    notSwitchRouting(j) = notSwitchRouting(j) + 1
     !t = t0*60. + (n+1)*dtini/60.
     !print "('- cycle',i9,'  completed')", n
     !print "('- simulation time ',2f16.2,'  completed')", t
@@ -973,6 +1013,7 @@ program mesh
         write(93, 10) t*60.,j, (pere(i,j), i=1, maxval(nx1))
 
         write(97, *) t*60.0,j, currentROutingDiffusive(j), notSwitchRouting(j)
+        write(991, *) t*60.0, j, (volRemain(i,j), i=1, maxval(nx1)-1)
     end do
 
     end if
@@ -1010,10 +1051,15 @@ program mesh
     close(97)
     close(98)
     close(99)
+    close(991)
 
    ! print*, 'dx', (dx(i,j), i=1, ncomp-1)
    ! print*, 'Froude', (froud(i), i=1, ncomp)
-   print*, 'Bed', z
+   print*, 'Bed'
+   do j = 1, nlinks
+        ncomp=nx1(j)
+        print*, (z(i,j), i=1, maxval(nx1))
+   end do
    ! print*, 'newArea', (newArea(i,j), i=1, ncomp)
    ! print*, 'I2_corr', (ci2(i), i=1, ncomp)
    ! print*, 'Courant no', (courant(i), i=1, ncomp-1)
@@ -1029,33 +1075,7 @@ program mesh
     !pause 202
 end program mesh
 
-function r_interpol(x,y,kk,xt)
 
-    integer, intent(in) :: kk
-    real, intent(in) :: xt, x(kk), y(kk)
-
-    if (xt.le.maxval(x) .and. xt.ge.minval(x)) then
-        do k=1,kk-1
-            if((x(k)-xt)*(x(k+1)-xt).le.0)then
-
-                yt=(xt-x(k))/(x(k+1)-x(k))*(y(k+1)-y(k))+y(k)
-
-                EXIT
-            endif
-        end do
-    else
-        print*, xt, ' is not within the limit'
-        print*, 'maxval(x)= ', maxval(x), 'and minval(x)=', minval(x),'so',  xt, ' is not within the limit'
-        print*, 'kk', kk
-        print*, 'x', (x(i), i=1, kk)
-        print*, 'y', (y(i), i=1, kk)
-        stop
-        !if (xt.le. minval(x)) yt=minval(y)
-        !if (xt.ge. maxval(x)) yt=maxval(y)
-    end if
-    r_interpol = yt
-    return
-end function
 
 function r_interpol_time(x,y,jj,xt)
 

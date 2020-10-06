@@ -30,6 +30,39 @@ contains
     end subroutine
 
 
+    subroutine r_interpol(x,y,kk,xrt,yt)
+        implicit none
+
+    integer, intent(in) :: kk
+    real, intent(in) :: xrt, x(kk), y(kk)
+    real, intent(out) :: yt
+    integer :: k
+
+    if (xrt.le.maxval(x) .and. xrt.ge.minval(x)) then
+        do k=1,kk-1
+            if((x(k)-xrt)*(x(k+1)-xrt).le.0)then
+
+                yt=(xrt-x(k))/(x(k+1)-x(k))*(y(k+1)-y(k))+y(k)
+
+                EXIT
+            endif
+        end do
+    else
+        print*, xrt, ' is not within the limit'
+        yt = -9999.0
+        print*, 'maxval(x)= ', maxval(x), 'and minval(x)=', minval(x),'so',  xrt, ' is not within the limit'
+        print*, 'kk', kk
+        print*, 'x', (x(k), k=1, kk)
+        print*, 'y', (y(k), k=1, kk)
+        !stop
+        !if (xrt.le. minval(x)) yt=minval(y)
+        !if (xrt.ge. maxval(x)) yt=maxval(y)
+    end if
+    !r_interpol = yt
+    !return
+end subroutine r_interpol
+
+
 !+++-------------------------------------------------------------------
 !+ Compute Q from a given value of Y using Manning's equation, which
 !+ becomes uniform flow eqns when slp is So and nonuniform flow eqns
@@ -85,7 +118,7 @@ contains
         integer, intent(in) :: i, j
         real, intent(in) :: q_sk_multi, So, dsc
         real, intent(out) :: y_norm, y_crit, area_n, area_c
-        real :: area_0, width_0, errorY, hydR_0, r_interpol!, fro
+        real :: area_0, width_0, errorY, hydR_0!, fro
         integer :: trapnm_app, recnm_app, iter
 
 
@@ -94,8 +127,8 @@ contains
             rediTable = xsec_tab(4,:,i,j)
             topwTable = xsec_tab(6,:,i,j)
             !print*, 'initial ara 0', oldY(i,j)
-            area_0 = r_interpol(elevTable,areaTable,nel,oldY(i,j)) ! initial estimate
-            width_0= r_interpol(elevTable,topwTable,nel,oldY(i,j)) ! initial estimate
+            call r_interpol(elevTable,areaTable,nel,oldY(i,j),area_0) ! initial estimate
+            call r_interpol(elevTable,topwTable,nel,oldY(i,j),width_0) ! initial estimate
 
             !print*, 'initial ara 0', area_0
 
@@ -104,7 +137,7 @@ contains
             !pause
             do while (errorY .gt. 0.00001)
                 !print*, '11', area_0
-                hydR_0 = r_interpol(areaTable,rediTable,nel,area_0)
+                call r_interpol(areaTable,rediTable,nel,area_0,hydR_0)
                 !print*, '12', hydR_0
                 area_n = dsc/sk(i,j)/q_sk_multi/ hydR_0 ** (2./3.) / sqrt(So)
                 !print*, '13', dsc, area_n
@@ -113,12 +146,12 @@ contains
                 area_0 = area_n
                 !print*, 'area_0', area_n,'hydR_0', hydR_0
                 area_c = (dsc * dsc * width_0 / grav) ** (1./3.)
-                width_0  = r_interpol(areaTable,topwTable,nel,area_c)
+                call r_interpol(areaTable,topwTable,nel,area_c, width_0)
                 !fro=abs(dsc)/sqrt(grav*area_c**3.0/width_0)
             enddo
 
-            y_norm = r_interpol(areaTable,elevTable,nel,area_0)
-            y_crit = r_interpol(areaTable,elevTable,nel,area_c)
+            call r_interpol(areaTable,elevTable,nel,area_0,y_norm)
+            call r_interpol(areaTable,elevTable,nel,area_c,y_crit)
 
     end subroutine normal_crit_y
 
