@@ -1,0 +1,16 @@
+No of upstream channels at each river reach				
+1	0
+2	0
+3	2	
+which links are at the U/S of the current link j				
+1	0	
+2	0	
+3	2	1
+which links are at the D/S of the current link j				
+1	3
+2	3
+3	0	
+U/S and D/S boundary conditions of the link j: First column = 2	means Q boundary at u/s; 2nd column = 1 means WL boundary at d/s. Value = 0 means internal boundary
+1	2	0  
+2	2	0
+3	0	1
