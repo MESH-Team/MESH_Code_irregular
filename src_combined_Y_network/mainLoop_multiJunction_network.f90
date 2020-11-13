@@ -59,9 +59,15 @@ program mesh
     !open(unit=1,file="../Multijunction_Network/input/input_multiJunction_NHD_mixedRouting_8channel.txt",status='unknown')
     !open(unit=1,file="../Multijunction_Network/input/input_multiJunction_NHD_mixedRouting_11channel.txt",status='unknown')
     !open(unit=1,file="../Multijunction_Network/input/input_multiJunction_NHD_mixedRouting_16channel.txt",status='unknown')
-    open(unit=1,file="../Multijunction_Network/input/input_multiJunction_NHD_mixedRouting_29channel.txt",status='unknown')
+    !open(unit=1,file="../Multijunction_Network/Large_NHD_Geometry/input_NHD_mixedRouting_29channel.txt",status='unknown')
     !open(unit=1,file="../Synthetic_Network_Test/input",status='unknown')
     !open(unit=1,file="../Rectangular_Y_Channel/input/input_naturalChannel_exact.txt",status='unknown')
+    !open(unit=1,file="../Multijunction_Network/Large_NHD_Geometry_temp/input_NHD_mixedRouting_29channel_temp.txt",status='unknown')
+    !open(unit=1,file="../NHD_Y_Channel/input/input_naturalChannel_exact_20201012.txt",status='unknown')
+    !open(unit=1,file="../NHD_Y_Channel/input/input_naturalChannel_test.txt",status='unknown')
+    open(unit=1,file="../lateralFlow_test/input/input_crank_nicolson_test_lateralFlow.txt",status='unknown')
+    !open(unit=1,file="../NHD_Y_Channel/input/input_naturalChannel_test_1chn.txt",status='unknown')
+
 
 
     print*, 'Reading input file'
@@ -225,7 +231,7 @@ program mesh
     ! Reading Q-SK table data data ends
 
     read(1,*) ndep_path ! Reading the location of network file
-
+!print*, ndep_path; pause
     close (1)       ! all input data read is finished
 
     ! Allocate arrays
@@ -449,7 +455,7 @@ program mesh
             xt=oldY(ncomp,j)
             call r_interpol(ncompElevTable,ncompAreaTable,nel,xt,oldArea(ncomp,j))
 			if (oldArea(ncomp,j) .eq. -9999) then
-				print*, 'At j = ',j,', i = ',i, 'time =',t, 'interpolation of oldArea(ncomp,j) was not possible'
+				print*, 'At j = ',j,', i = ',ncomp, 'time =',t, 'interpolation of oldArea(ncomp,j) was not possible'
 				stop
 			end if
         end if
@@ -607,7 +613,7 @@ program mesh
     frus2 = 9999.
     notSwitchRouting=0
     minNotSwitchRouting = 2         ! works between Dynamic and Diffusive switching
-    minNotSwitchRouting2 = 1        ! works between full Diffusive and partial Diffusive switching
+    minNotSwitchRouting2 = 0        ! works between full Diffusive and partial Diffusive switching
     !
     ! Loop on time
     !
@@ -726,7 +732,54 @@ program mesh
 
           !print*, 'Check boundary', 'areav', areav
 
+        ! new approach to add multiple lateral flow to the same node
+        lateralFlow = 0
+        do i=1,noLatFlow(j)
+            if (latFlowType(i,j) .eq. 1) then
+                latFlowValue = r_interpol_time(lateralFlowTable(1, 1:dataInEachLatFlow(i,j), i,j), &
+                    lateralFlowTable(2, 1:dataInEachLatFlow(i,j), i,j),dataInEachLatFlow(i,j),t)
+                !print*, t, latFlowValue
+            elseif (latFlowType(i,j) .eq. 2) then
+                call r_interpol(lateralFlowTable(1, 1:dataInEachLatFlow(i,j), i,j), &
+                    lateralFlowTable(2, 1:dataInEachLatFlow(i,j), i,j),dataInEachLatFlow(i,j), &
+                    oldQ(latFlowLocations(i,j)-1,j),latFlowValue)
+            endif
 
+
+            ! added condition for lateral flow at the upstream boundary node
+            if (latFlowLocations(i,j) .eq. 1) then
+                if (latFlowXsecs(i,j) .gt. 1) then
+                    latFlowValue = latFlowValue / &
+                    (dx(1,j)+sum(dx(latFlowLocations(i,j):latFlowLocations(i,j)+latFlowXsecs(i,j)-2,j)))
+                    do k=1,latFlowXsecs(i,j)
+                        lateralFlow(latFlowLocations(i,j)+k-1)=lateralFlow(latFlowLocations(i,j)+k-1) + latFlowValue
+                    end do
+                else
+                    latFlowValue = latFlowValue / dx(1,j)
+                    lateralFlow(1)=latFlowValue
+                end if
+                newQ(1,j) = newQ(1,j)+lateralFlow(1)*dx(1,j)
+                dqp(1,j)  = newQ(1,j) - oldQ(1,j)
+
+            else
+!                if (j .eq. 1) print*, latFlowValue, sum(dx(latFlowLocations(i,j)-1:latFlowLocations(i,j)-1+latFlowXsecs(i,j)-1,j))
+                latFlowValue = latFlowValue / &
+                        !sum(dx(latFlowLocations(i):latFlowLocations(i)+latFlowXsecs(i)-1))          !!! check this line
+                       sum(dx(latFlowLocations(i,j)-1:latFlowLocations(i,j)-1+latFlowXsecs(i,j)-1,j))  ! current line until 20201111
+              !          (sum(dx(latFlowLocations(i,j)-1:latFlowLocations(i,j)-1+latFlowXsecs(i,j)-1,j)) &         ! change 20201111 ! did not work
+              !          -dx(latFlowLocations(i,j)-1,j)/2.0+ dx(latFlowLocations(i,j)-1+latFlowXsecs(i,j),j)/2.0)  ! change 20201111 ! did not work
+              !  print*, (sum(dx(latFlowLocations(i,j)-1:latFlowLocations(i,j)-1+latFlowXsecs(i,j)-1,j)) &
+              !          -dx(latFlowLocations(i,j)-1,j)/2.0+ dx(latFlowLocations(i,j)-1+latFlowXsecs(i,j),j)/2.0)
+                !pause
+
+                !test
+                latFlowValue = 0.01
+
+                do k=1,latFlowXsecs(i,j)
+                    lateralFlow(latFlowLocations(i,j)+k-1)=lateralFlow(latFlowLocations(i,j)+k-1) + latFlowValue
+                end do
+            end if
+        end do
 
 
 
@@ -745,45 +798,9 @@ program mesh
         !print*, j, 'y_norm_us',y_norm_us
 
 
-        ! new approach to add multiple lateral flow to the same node
-        lateralFlow = 0
-        do i=1,noLatFlow(j)
-            if (latFlowType(i,j) .eq. 1) then
-                latFlowValue = r_interpol_time(lateralFlowTable(1, 1:dataInEachLatFlow(i,j), i,j), &
-                    lateralFlowTable(2, 1:dataInEachLatFlow(i,j), i,j),dataInEachLatFlow(i,j),t)
-                !print*, t, latFlowValue
-            elseif (latFlowType(i,j) .eq. 2) then
-                call r_interpol(lateralFlowTable(1, 1:dataInEachLatFlow(i,j), i,j), &
-                    lateralFlowTable(2, 1:dataInEachLatFlow(i,j), i,j),dataInEachLatFlow(i,j), &
-                    oldQ(latFlowLocations(i,j)-1,j),latFlowValue)
-            endif
 
 
-            ! added condition for lateral flow at the upstream boundary
-            if (latFlowLocations(i,j) .eq. 1) then
-                if (latFlowXsecs(i,j) .gt. 1) then
-                    latFlowValue = latFlowValue / &
-                    (dx(1,j)+sum(dx(latFlowLocations(i,j):latFlowLocations(i,j)+latFlowXsecs(i,j)-2,j)))
-                    do k=1,latFlowXsecs(i,j)
-                        lateralFlow(latFlowLocations(i,j)+k-1)=lateralFlow(latFlowLocations(i,j)+k-1) + latFlowValue
-                    end do
-                else
-                    latFlowValue = latFlowValue / dx(1,j)
-                    lateralFlow(1)=latFlowValue
-                end if
-                newQ(1,j) = newQ(1,j)+lateralFlow(1)*dx(1,j)
-            else
-                latFlowValue = latFlowValue / &
-                        !sum(dx(latFlowLocations(i):latFlowLocations(i)+latFlowXsecs(i)-1))          !!! check this line
-                        sum(dx(latFlowLocations(i,j)-1:latFlowLocations(i,j)-1+latFlowXsecs(i,j)-1,j))
-
-                do k=1,latFlowXsecs(i,j)
-                    lateralFlow(latFlowLocations(i,j)+k-1)=lateralFlow(latFlowLocations(i,j)+k-1) + latFlowValue
-                end do
-            end if
-        end do
-
-        !print*, lateralFlow; pause
+        !print*, j, 'newQ(1,j)',newQ(1,j),lateralFlow!; pause
 
 
 
@@ -862,7 +879,9 @@ program mesh
     end do  ! end off j loop for predictor
 
 
-
+!print*, 'qp',qp
+!print*, 'ce',(celerity(i,2), i=1,ncomp)
+!pause
      !!+++++++ corrector starts +++++++++++++
 
     do j =  nlinks,1,-1
@@ -885,10 +904,10 @@ program mesh
                 !print*, j,linknb; pause
 
                 !area_ds=oldArea(1,linknb)+0.5*(dap(1,linknb)+dac(1,linknb))
-                xt = newArea(1,linknb)
-                elevTable = xsec_tab(1,:,1,linknb)
-                areaTable = xsec_tab(2,:,1,linknb)
-                call r_interpol(areaTable,elevTable,nel,xt,y_ds)
+                !xt = newArea(1,linknb)
+                !elevTable = xsec_tab(1,:,1,linknb)
+                !areaTable = xsec_tab(2,:,1,linknb)
+                !call r_interpol(areaTable,elevTable,nel,xt,y_ds)
                 newY(ncomp,j)= newY(1,linknb)
 
                 xt = newY(ncomp,j)
@@ -948,7 +967,6 @@ program mesh
 
     end do  ! end of j loop
 
-
     do j = 1, nlinks
         ncomp = nx1(j)
         do i=1,ncomp
@@ -958,7 +976,7 @@ program mesh
             endif
         enddo
         if (maxCourant .lt. maxval (courant(1:ncomp-1))) then
-            maxCourant = maxval (courant)
+            maxCourant = maxval (courant(1:ncomp-1))
         endif
     enddo
 
@@ -1037,7 +1055,6 @@ program mesh
     close(8)
     close(9)
     close(51)
-
     close(91)
     close(93)
     close(941)
@@ -1053,7 +1070,7 @@ program mesh
     close(99)
     close(991)
 
-   ! print*, 'dx', (dx(i,j), i=1, ncomp-1)
+   print*, 'dx', (dx(i,1), i=1, ncomp-1)
    ! print*, 'Froude', (froud(i), i=1, ncomp)
    print*, 'Bed'
    do j = 1, nlinks
