@@ -1,4 +1,3 @@
-NOT USED NOW
 !subroutine mesh_diffusive(ppp,qqq, t0, t, tfin, saveInterval,j)
 subroutine mesh_diffusive_forward(dtini_given, t0, t, tfin, saveInterval,j)
 
@@ -21,7 +20,7 @@ subroutine mesh_diffusive_forward(dtini_given, t0, t, tfin, saveInterval,j)
     real(kind=4) :: a1, a2, a3, a4, b1, b2, b3, b4, dd1, dd2, dd3, dd4, h1, h2, h3, h4, xt
     real(kind=4) :: qy, qxy, qxxy, qxxxy, ppi, qqi, rri, ssi, sxi, mannings, Sb, width
 
-    real(kind=4) :: cour, cour2, q_sk_multi, sfi, r_interpol_time, r_interpo_nn, temp
+    real(kind=4) :: cour, cour2, q_sk_multi, sfi, r_interpol_time, r_interpo_nn, temp, alpha
 
     real(kind=4) :: y_norm_ds, y_crit_ds, S_ncomp, frds, area_0, width_0, hydR_0, errorY, currentQ
     integer :: tableLength
@@ -74,7 +73,13 @@ subroutine mesh_diffusive_forward(dtini_given, t0, t, tfin, saveInterval,j)
             h3 = 6.0 / ( dx(i-1,j) ** 2.0 )
             h4 = h3
 
-!            if (j .eq. 1) print*,'abcd', a1,a2,a3,a4,b1,b2,b3,b4,dd1,dd2,dd3,dd4,h1,h2,h3,h4
+            if (j .eq. 1) print*,'abcd', i,a1,a2,a3,a4,b1,b2,b3,b4,dd1,dd2,dd3,dd4,h1,h2,h3,h4
+            if (i .eq. ncomp) then
+                alpha = 1.0
+            else
+                alpha = dx(i,j) / dx(i-1,j)
+            end if
+            !alpha = 1.0
 
 
 			qy   = a1 * oldQ(i-1,j) + a2 * oldQ(i,j) + a3 * qpx(i-1,j) + a4 * qpx(i,j)
@@ -85,11 +90,15 @@ subroutine mesh_diffusive_forward(dtini_given, t0, t, tfin, saveInterval,j)
 			!print*, i, qy, qxy, qxxy, qxxxy
 
 
-			ppi = - theta * diffusivity(i,j) * dtini / ( dx(i-1,j) ** 2.0 )
-			qqi = 1.0 - 2.0 * ppi
-			rri = ppi
+			!ppi = - theta * diffusivity(i,j) * dtini / ( dx(i-1,j) ** 2.0 )
+			!qqi = 1.0 - 2.0 * ppi
+			!rri = ppi
+!			print*, 'alpha', alpha, diffusivity(i,j)
+            ppi = - theta * diffusivity(i,j) * dtini / ( dx(i-1,j) ** 2.0 ) * 2.0 / (alpha*(alpha + 1.0)) * alpha
+			qqi = 1.0 - ppi * (alpha + 1.0) / alpha
+			rri = ppi / alpha
 			ssi = qy  + dtini * diffusivity(i,j) * ( 1.0 - theta ) * qxxy + dtini * celerity(i,j) * lateralFlow(i)
-			sxi = qxy + dtini * diffusivity(i,j) * ( 1.0 - theta ) * qxxxy+ dtini * celerity(i,j) * lateralFlow(i)/ dx(i-1,j)
+			sxi = qxy + dtini * diffusivity(i,j) * ( 1.0 - theta ) * qxxxy !+ dtini * celerity(i,j) * lateralFlow(i)/ dx(i-1,j)
 
 			eei(i) = -1.0 * rri / ( ppi * eei(i-1) + qqi )                     !! copied from split operator method
 			ffi(i) = ( ssi - ppi * ffi(i-1) ) / ( ppi * eei(i-1) + qqi )       !! copied from split operator method
@@ -97,7 +106,7 @@ subroutine mesh_diffusive_forward(dtini_given, t0, t, tfin, saveInterval,j)
 			exi(i) = -1.0 * rri / ( ppi * exi(i-1) + qqi )
 			fxi(i) = ( sxi - ppi * fxi(i-1) ) / ( ppi * exi(i-1) + qqi )
 
-!			if (j .eq. 1) print*, i, qy, qxy, qxxy, qxxxy, ppi,qqi,rri,ssi, sxi, eei(i),ffi(i),exi(i), fxi(i)
+			if (j .eq. 1) print*, i, qy, qxy, qxxy, qxxxy, ppi,qqi,rri,ssi, sxi, eei(i),ffi(i),exi(i), fxi(i)
 
 			!print*,i, dtini, celerity(i), lateralFlow(i,j)
         end do
@@ -115,32 +124,17 @@ subroutine mesh_diffusive_forward(dtini_given, t0, t, tfin, saveInterval,j)
 			qp(i,j) = eei(i) * qp(i+1,j) + ffi(i)
 			qpx(i,j)= exi(i) *qpx(i+1,j) + fxi(i)
 
-        end do
+			print*, i, qp(i,j), qpx(i,j)
 
+        end do
+        !qp(1:9,1)=1.0; qp(10:ncomp,1)=11.0;
+        !pause
         qp(1,j) = newQ(1,j)
         newQ(1:ncomp,j) = qp(1:ncomp,j)
         dqp(1:ncomp,j) = newQ(1:ncomp,j)-oldQ(1:ncomp,j)
         dqc(1:ncomp,j) = dqp(1:ncomp,j)
         dap(1:ncomp,j) = 0.
 
-!        if (j .eq. 1) print*, 'lateralFlow', lateralFlow
-
-        !if (j .eq. 6) print*, 'qp=', (qp(i,j), i=1, ncomp)
-        !if (j .eq. 6) print*, 'celerity=', (celerity(i,j), i=1, ncomp)
-        !if (j .eq. 6) print*, 'diffusivity=', (diffusivity(i,j), i=1, ncomp)
-        !if (j .eq. 6) print*, 'lateralFlow=', (lateralFlow(i), i=1, ncomp)
-
-       ! if (j .eq. 4) then
-       !     print*, 'qp', qp(1:ncomp,j)
-       !     print*, 'eei', eei(1:ncomp)
-       !     print*, 'ffi', ffi(1:ncomp-1)
-       !     print*, 'lateralFlow',lateralFlow(1:ncomp)
-       !     print*, 'diffusivity',diffusivity(1:ncomp,j)
-       !     print*, 'celerity',celerity(1:ncomp,j)
-       ! end if
-        !print*, '0', j, qp(1:ncomp,j)
-        !print*, '1', j, celerity(1:ncomp,j)
-        !print*, '2', j, diffusivity(1:ncomp,j)
 
 
 !!++++++++++++++++++++ Diffusive wave Forward sweep ends +++++++++++++++++++!!
@@ -298,8 +292,8 @@ subroutine mesh_diffusive_backward(dtini_given, t0, t, tfin, saveInterval,j)
             diffusivity2(i) = abs(qp(i,j)) / 2.0 / bo(i,j) / sfi
 
             !!! test
-            !celerity2    = 2.0
-            !diffusivity2 = 10.
+            celerity2    = 1.0
+            diffusivity2 = 100.
 
 
 
