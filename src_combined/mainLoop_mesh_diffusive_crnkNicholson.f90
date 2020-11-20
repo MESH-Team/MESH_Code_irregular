@@ -17,7 +17,7 @@ subroutine mesh_diffusive(ppp,qqq, t0, t, tfin, saveInterval)
 
 
     real(kind=4) :: a1, a2, a3, a4, b1, b2, b3, b4, dd1, dd2, dd3, dd4, h1, h2, h3, h4, xt
-    real(kind=4) :: qy, qxy, qxxy, qxxxy, ppi, qqi, rri, ssi, sxi, mannings, Sb, width
+    real(kind=4) :: qy, qxy, qxxy, qxxxy, ppi, qqi, rri, ssi, sxi, mannings, Sb, width, alpha
 
     real(kind=4) :: cour, cour2, q_sk_multi, sfi, r_interpol_time, r_interpo_nn, r_interpol, temp, temp2, temp3
 
@@ -70,6 +70,13 @@ subroutine mesh_diffusive(ppp,qqq, t0, t, tfin, saveInterval)
             h3 = 6.0 / ( dx(i-1) ** 2.0 )
             h4 = h3
 
+            !!! CHANGE 20201120
+            if (i .eq. ncomp) then
+                alpha = 1.0
+            else
+                alpha = dx(i) / dx(i-1)
+            end if
+
 
 			qy   = a1 * oldQ(i-1) + a2 * oldQ(i) + a3 * qpx(i-1) + a4 * qpx(i)
 			qxy  = b1 * oldQ(i-1) + b2 * oldQ(i) + b3 * qpx(i-1) + b4 * qpx(i)
@@ -79,11 +86,18 @@ subroutine mesh_diffusive(ppp,qqq, t0, t, tfin, saveInterval)
 			!print*, qy, qxy, qxxy, qxxxy
 
 
-			ppi = - theta * diffusivity(i) * dtini / ( dx(i-1) ** 2.0 )
-			qqi = 1.0 - 2.0 * ppi
-			rri = ppi
+			!ppi = - theta * diffusivity(i) * dtini / ( dx(i-1) ** 2.0 )
+			!qqi = 1.0 - 2.0 * ppi
+			!rri = ppi
+
+			!!! CHANGE 20201120
+            ppi = - theta * diffusivity(i) * dtini / ( dx(i-1) ** 2.0 ) * 2.0 / (alpha*(alpha + 1.0)) * alpha
+			qqi = 1.0 - ppi * (alpha + 1.0) / alpha
+			rri = ppi / alpha
+
+
 			ssi = qy  + dtini * diffusivity(i) * ( 1.0 - theta ) * qxxy + dtini * celerity(i) * lateralFlow(i)
-			sxi = qxy + dtini * diffusivity(i) * ( 1.0 - theta ) * qxxxy+ dtini * celerity(i) * lateralFlow(i)/ dx(i-1)
+			sxi = qxy + dtini * diffusivity(i) * ( 1.0 - theta ) * qxxxy  !+ dtini * celerity(i) * lateralFlow(i)/ dx(i-1) !!! CHANGE 20201120
 
 			eei(i) = -1.0 * rri / ( ppi * eei(i-1) + qqi )                     !! copied from split operator method
 			ffi(i) = ( ssi - ppi * ffi(i-1) ) / ( ppi * eei(i-1) + qqi )       !! copied from split operator method
