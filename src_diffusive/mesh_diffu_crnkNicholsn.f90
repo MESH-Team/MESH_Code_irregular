@@ -29,7 +29,7 @@ program mesh
     character(len=128) :: path
 
     !!! TEST !!!
-    real(kind=4) :: a1, a2, a3, a4, b1, b2, b3, b4, dd1, dd2, dd3, dd4, h1, h2, h3, h4
+    real(kind=4) :: a1, a2, a3, a4, b1, b2, b3, b4, dd1, dd2, dd3, dd4, h1, h2, h3, h4, alpha
     real(kind=4) :: qy, qxy, qxxy, qxxxy, ppi, qqi, rri, ssi, sxi, cour2, mannings, Sb, width
 
     real(kind=4) :: pere(500)
@@ -363,7 +363,7 @@ program mesh
 
         call calculateDT(t0, t,saveInterval, cfl, tfin)
         !print*, t, dtini
-
+!!++++++++++++++++++++ Diffusive wave Forward sweep starts +++++++++++++++++++!!
 		!!! steps for advection equation
 
         eei(1) = 1.0
@@ -398,20 +398,24 @@ program mesh
             h3 = 6.0 / ( dx(i-1) ** 2.0 )
             h4 = h3
 
+            if (i .eq. ncomp) then
+                alpha = 1.0
+            else
+                alpha = dx(i) / dx(i-1)
+            end if
+
 
 			qy   = a1 * oldQ(i-1) + a2 * oldQ(i) + a3 * qpx(i-1) + a4 * qpx(i)
 			qxy  = b1 * oldQ(i-1) + b2 * oldQ(i) + b3 * qpx(i-1) + b4 * qpx(i)
 			qxxy = dd1* oldQ(i-1) + dd2* oldQ(i) + dd3* qpx(i-1) + dd4* qpx(i)
 			qxxxy= h1 * oldQ(i-1) + h2 * oldQ(i) + h3 * qpx(i-1) + h4 * qpx(i)
 
-			!print*, qy, qxy, qxxy, qxxxy
 
-
-			ppi = - theta * diffusivity(i) * dtini / ( dx(i-1) ** 2.0 )
-			qqi = 1.0 - 2.0 * ppi
-			rri = ppi
+            ppi = - theta * diffusivity(i) * dtini / ( dx(i-1) ** 2.0 ) * 2.0 / (alpha*(alpha + 1.0)) * alpha
+			qqi = 1.0 - ppi * (alpha + 1.0) / alpha
+			rri = ppi / alpha
 			ssi = qy  + dtini * diffusivity(i) * ( 1.0 - theta ) * qxxy + dtini * celerity(i) * lateralFlow(i)
-			sxi = qxy + dtini * diffusivity(i) * ( 1.0 - theta ) * qxxxy+ dtini * celerity(i) * lateralFlow(i)/ dx(i-1)
+			sxi = qxy + dtini * diffusivity(i) * ( 1.0 - theta ) * qxxxy
 
 			eei(i) = -1.0 * rri / ( ppi * eei(i-1) + qqi )                     !! copied from split operator method
 			ffi(i) = ( ssi - ppi * ffi(i-1) ) / ( ppi * eei(i-1) + qqi )       !! copied from split operator method
