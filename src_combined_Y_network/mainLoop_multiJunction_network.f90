@@ -952,6 +952,7 @@ program mesh
         end if
 
         ! Checking maximum celerity at the end of one time loop
+	maxCelerity = 0.
         if (j .eq. 1) then
             do i=1,nlinks
                 maxCelerity = maxval(celerity(1:nx1(i),i))
