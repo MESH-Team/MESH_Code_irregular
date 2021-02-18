@@ -292,8 +292,8 @@ subroutine mesh_diffusive_backward(dtini_given, t0, t, tfin, saveInterval,j)
             diffusivity2(i) = abs(qp(i,j)) / 2.0 / bo(i,j) / sfi
 
             !!! test
-            celerity2    = 1.0
-            diffusivity2 = 100.
+            !celerity2    = 1.0
+            !diffusivity2 = 100.
 
 
 
