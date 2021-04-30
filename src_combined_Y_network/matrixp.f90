@@ -11,10 +11,14 @@ subroutine matrixp(j)
     integer, intent(in) :: j
     ! Local
     integer :: i
-    real(kind=4) :: e(2, 2), f_mat(2, 2), a(2, 2), d(2), st(2, 2), g(2, 2)
-    real(kind=4) :: cour, crmax, crmin, di, dim1, dip1, dkda, ei, ei1, eia, ter
+    real :: e(2, 2), f_mat(2, 2), a(2, 2), d(2), st(2, 2), g(2, 2)
+    real :: cour, crmax, crmin, di, dim1, dip1, dkda, ei, ei1, eia, ter
 
     do i=1,ncomp
+
+
+        !print*, 'matrixp', j, i
+
         u(i)=oldQ(i,j)/area(i)
 
         ! Nazmul: TODO, check if this equation is good for natural channel
@@ -59,14 +63,16 @@ subroutine matrixp(j)
         ter=pere(i,j)
 
         !Nazmul: dkda is corrected according to October 1, 2019 meeting at NWC
-        dkda=sk(i,j)*((5.0/3.0*area(i)**(2.0/3.0)*ter)     &
-                   -(2.0/3.0*area(i)**(5.0/3.0)*dpda(i)))/(ter**(5.0/3.0))
+        !dkda=sk(i,j)*((5.0/3.0*area(i)**(2.0/3.0)*ter)     &
+        !           -(2.0/3.0*area(i)**(5.0/3.0)*dpda(i)))/(ter**(5.0/3.0))
+        dkda=sk(i,j)*((5.0/3.0*area(i)**(2.0/3.0)*ter)- &
+                    (area(i)**(5.0/3.0)*2.0/bo(i,j)))/(ter**(5.0/3.0))
 
         ! Matrix S (eq 14)
         st(1, 1)=0.0
         st(1, 2)=0.0 !CHANGE
         !st(1, 2)=1.0
-        st(2, 1)=grav*area(i)/bo(i,j)/bo(i,j)*dbdx(i)+gso(i)      &
+        st(2, 1)=grav*area(i)/bo(i,j)/bo(i,j)*dbdx(i,j)+gso(i,j)      &
                 +f*2.0*grav*area(i)*oldQ(i,j)*abs(oldQ(i,j))/co(i)**3.0*dkda
                 !+f*2.0*grav*area(i)*q(n,i)*abs(q(n,i))/co(i)**3.0*dkda
 
@@ -77,6 +83,8 @@ subroutine matrixp(j)
 
         if(dx(i,j) < TOLERANCE) then
             cour=dt(i)
+        !else if (i .eq. ncomp) then
+        !    cour = dt(i)/dx(i-1,j)
         else
             cour=dt(i)/dx(i,j)
             crmax=max(crmax,cour*max(d(1),d(2)))
@@ -88,6 +96,11 @@ subroutine matrixp(j)
         b12(i)=-theta*cour*a(1,2)-0.5*thes*st(1,2)*dt(i)
         b21(i)=-theta*cour*a(2,1)-0.5*thes*st(2,1)*dt(i)
         b22(i)=0.5-phi-theta*cour*a(2,2)-0.5*thes*st(2,2)*dt(i)
+
+        !if (i .eq. ncomp) then
+
+            !pause 5002
+        !end if
 
         ! This is switched with the dx check about in matrixc...
         if(i == 1) then
@@ -108,11 +121,16 @@ subroutine matrixp(j)
         g21inv(i)=-g(2,1)/(g(1,1)*g(2,2)-g(1,2)*g(2,1))
         g22inv(i)= g(1,1)/(g(1,1)*g(2,2)-g(1,2)*g(2,1))
 
+
+
+
         !f1(i)=q(n,i)
         f1(i)=oldQ(i,j)
         !print *, ncomp, i, area(i)
         !f2(i)=q(n,i)*q(n,i)/area(i)+grav*ci1(i)
         f2(i)=oldQ(i,j)*oldQ(i,j)/area(i)+grav*ci1(i)
+
+
 
         if(i >= 2 .and. i < ncomp) then
             dip1=area(i+1)/bo(i+1,j)
@@ -126,6 +144,12 @@ subroutine matrixp(j)
                 eps2(i)=alfa2*abs(dip1-di+dim1)/(dip1+di+dim1)
             endif
         endif
+
+   !     print*,j,i, u(i),c(i),e(1,1),e(1,2),e(2,1),e(2,2),f_mat(1,1),&
+   !     f_mat(1,2),f_mat(2,1),f_mat(2,2),d(1),d(2),a(1,1),a(1,2),a(2,1),&
+   !     a(2,2),ots,dt(i),dkda,st(1, 1),st(1, 2),st(2, 1),st(2, 2),dx(i,j),&
+   !     cour,b11(i),b12(i),b21(i),b22(i),theta,thes,phi,g(1,1),g(1,2),g(2,1),&
+   !     g(2,2),g11inv(i),g12inv(i),g21inv(i),g22inv(i),oldQ(i,j),area(i)
 
         !if(i >= 2 .and. i < ncomp) then
         !    dip1=area(i+1)/bo(i+1)
@@ -181,6 +205,15 @@ subroutine matrixp(j)
         endif
         ! print *, i,d1(i),d2(i),eps2(i),area(i+1),area(i)
     end do
+
+    !do i = 1,ncomp
+    !    print*,i,u(i),c(i),b11(i),b12(i),b21(i),b22(i),g11inv(i),g12inv(i),g21inv(i),g22inv(i),f1(i),f2(i),d1(i),d2(i)
+!!
+    !end do
+  !  print*, 'b11', b11
+    !pause
+
+
     !print*, 'eps2_pred', (eps2(i), i=1, ncomp)
 
 end subroutine matrixp

@@ -1,4 +1,4 @@
-subroutine matrixc(j)
+subroutine matrixc(j)        ! diffusive model by force
 
     use constants_module
     use arrays_module
@@ -10,10 +10,13 @@ subroutine matrixc(j)
     integer, intent(in) :: j
     ! Local variables
     integer :: i
-    real(kind=4) :: e(2, 2), st(2,2), a(2,2), f_mat(2, 2), g(2, 2), d(2)
-    real(kind=4) :: cour, crmax, crmin, di, dim1, dip1, dkda, ei, ei1, eia, ter
+    real :: e(2, 2), st(2,2), a(2,2), f_mat(2, 2), g(2, 2), d(2)
+    real :: cour, crmax, crmin, di, dim1, dip1, dkda, ei, ei1, eia, ter
 
     do i=1,ncomp
+
+        !print*, 'matrixc', j, i
+
         u(i)=qp(i,j)/areap(i,j)
         c(i)=sqrt(grav*areap(i,j)/bo(i,j))
 
@@ -49,21 +52,23 @@ subroutine matrixc(j)
         !Nazmul
         ter=pere(i,j)
         !Nazmul: dkda is corrected according to October 1, 2019 meeting at NWC
-        dkda=sk(i,j)*((5.0/3.0*areap(i,j)**(2.0/3.0)*ter)     &
-                   -(2.0/3.0*areap(i,j)**(5.0/3.0)*dpda(i)))/(ter**(5.0/3.0))
+        !dkda=sk(i,j)*((5.0/3.0*areap(i,j)**(2.0/3.0)*ter)     &
+        !           -(2.0/3.0*areap(i,j)**(5.0/3.0)*dpda(i)))/(ter**(5.0/3.0))
+        dkda=sk(i,j)*((5.0/3.0*areap(i,j)**(2.0/3.0)*ter)-      &
+          (areap(i,j)**(5.0/3.0)*2.0/bo(i,j)))/(ter**(5.0/3.0))
 
         ! Matrix S (eq 14)
         st(1, 1)=0.0
         st(1, 2)=0.0 !CHANGE
         !st(1, 2)=1.0
-        st(2, 1)=grav*areap(i,j)/bo(i,j)/bo(i,j)*dbdx(i)+gso(i)      &
+        st(2, 1)=grav*areap(i,j)/bo(i,j)/bo(i,j)*dbdx(i,j)+gso(i,j)      &
                 +f*2.0*grav*areap(i,j)*qp(i,j)*abs(qp(i,j))/co(i)**3.0*dkda
         !Nazmul: st(2,2) term is multiplied with a gravity
         st(2,2)=-2*f*qp(i,j)*grav*areap(i,j)/co(i)/co(i)
 
         ! cour == sigma
         if(i == 1) then
-            cour=dt(i)
+            cour=dt(i) !/dx(i,j)
         else if(dx(i-1,j) < TOLERANCE) then
             cour=dt(i)
         else
@@ -102,6 +107,14 @@ subroutine matrixc(j)
             dim1=areap(i-1,j)/bo(i-1,j)
             eps2(i)=alfa2*abs(dip1-di+dim1)/(dip1+di+dim1)
         endif
+
+   !     print*,j,i, u(i),c(i),e(1,1),e(1,2),e(2,1),e(2,2),f_mat(1,1),&
+   !     f_mat(1,2),f_mat(2,1),f_mat(2,2),d(1),d(2),a(1,1),a(1,2),a(2,1),&
+   !     a(2,2),ots,dt(i),dkda,st(1, 1),st(1, 2),st(2, 1),st(2, 2),dx(i,j),&
+   !     cour,b11(i),b12(i),b21(i),b22(i),theta,thes,phi,g(1,1),g(1,2),g(2,1),&
+   !     g(2,2),g11inv(i),g12inv(i),g21inv(i),g22inv(i),qp(i,j),areap(i,j)
+
+
     end do
     eps2(1)=eps2(2)
     eps2(ncomp)=eps2(ncomp-1)
@@ -145,8 +158,11 @@ subroutine matrixc(j)
           d2(i)=eps2(i)*eia*(qp(i,j)-qp(i-1,j))-eps4(i)*(qp(i+1,j)-3*qp(i,j)   &
                             +3*qp(i-1,j)-qp(i-2,j))
         endif
-        ! print *, 'corr',i,d1(i),d2(i),eps2(i),area(i+1),area(i)
     end do
-    !print*, 'eps2_corr', (eps2(i), i=1, ncomp)
+
+ !   do i = 1,ncomp
+ !       print*,i,u(i),c(i),b11(i),b12(i),b21(i),b22(i),g11inv(i),g12inv(i),g21inv(i),g22inv(i),f1(i),f2(i),d1(i),d2(i)
+ !   end do
+ !   pause
 
 end subroutine matrixc

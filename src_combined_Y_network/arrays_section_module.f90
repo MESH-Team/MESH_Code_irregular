@@ -3,15 +3,15 @@ module arrays_section_module
     implicit none
     save
 
-    real(kind=4), allocatable :: elevTable(:),areaTable(:)
-    real(kind=4), allocatable :: pereTable(:),rediTable(:)
-    real(kind=4), allocatable :: convTable(:),topwTable(:)
-    real(kind=4), allocatable :: nwi1Table(:),dPdATable(:)
-    real(kind=4), allocatable :: ncompElevTable(:), ncompAreaTable(:)
+    real, allocatable :: elevTable(:),areaTable(:)
+    real, allocatable :: pereTable(:),rediTable(:)
+    real, allocatable :: convTable(:),topwTable(:)
+    real, allocatable :: nwi1Table(:),dPdATable(:)
+    real, allocatable :: ncompElevTable(:), ncompAreaTable(:), skkkTable(:)
 ! only in version 2 20191511
-    real(kind=4), allocatable :: I2Tablep(:),I2Tablec(:)
-    real(kind=4), allocatable :: upstreamI2Tablec(:), downstreamI2Tablep(:)
-    real(kind=4), allocatable :: currentSquareDepth(:), currentCubicDepth(:), downstreamSquareDepth(:), upstreamSquareDepth(:)
+    real, allocatable :: I2Tablep(:),I2Tablec(:)
+    real, allocatable :: upstreamI2Tablec(:), downstreamI2Tablep(:)
+    real, allocatable :: currentSquareDepth(:), currentCubicDepth(:), downstreamSquareDepth(:), upstreamSquareDepth(:)
 
     integer :: maxTableLength, nel
 
@@ -30,6 +30,8 @@ contains
         allocate(topwTable(nel))
         allocate(nwi1Table(nel))
         allocate(dPdATable(nel))
+
+        allocate(skkkTable(nel))
 
 		allocate(ncompElevTable(nel))
         allocate(ncompAreaTable(nel))

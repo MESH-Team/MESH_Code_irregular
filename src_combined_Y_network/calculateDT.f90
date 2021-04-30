@@ -1,4 +1,4 @@
-subroutine calculateDT(initialTime, time, saveInterval, maxAllowCourantNo, tfin, max_C, given_dt)
+subroutine calculateDT(initialTime, time, saveInterval, maxAllowCourantNo, tfin, max_C_dx, given_dt)
 
     use var_module
     use arrays_module
@@ -6,7 +6,7 @@ subroutine calculateDT(initialTime, time, saveInterval, maxAllowCourantNo, tfin,
     implicit none
 
     real, intent(in) :: initialTime, time, saveInterval, tfin, given_dt
-    real, intent(in) :: maxAllowCourantNo, max_C
+    real, intent(in) :: maxAllowCourantNo, max_C_dx
     integer          :: a, b
 
     !! initialTime is in hours
@@ -17,7 +17,10 @@ subroutine calculateDT(initialTime, time, saveInterval, maxAllowCourantNo, tfin,
 
     !print*, time, saveInterval, maxAllowCourantNo
 
-    dtini = maxAllowCourantNo*minDx/max_C
+    !dtini = maxAllowCourantNo*minDx/max_C
+
+    dtini = maxAllowCourantNo/max_C_dx
+
     !dtini = min(dtini, given_dt)
     !dtini = given_dt
 

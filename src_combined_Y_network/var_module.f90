@@ -21,5 +21,6 @@ module var_module
     !real :: rhs1, rhs2, c11, c12, c21, c22
     !real :: yy, skk, qq  !vv, us,
     real :: dxini,lastKnownDiffuDT, skk!, tfin ntim
+    integer :: applyNaturalSection  ! if 1, then attribute table will be activated, if 0, then rectangular channel will be applied
 
 end module var_module

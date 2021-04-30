@@ -3,7 +3,7 @@ module xsec_attribute_module
     implicit none
     save
 
-    real(kind=4), allocatable :: xsec_tab(:, :, :, :)
+    real, allocatable :: xsec_tab(:, :, :, :)
 
     contains
 
@@ -15,7 +15,7 @@ module xsec_attribute_module
         ! Input
         integer, intent(in) :: elements, num_points, num_reaches
 
-        allocate(xsec_tab(10, elements, num_points, num_reaches))
+        allocate(xsec_tab(11, elements, num_points, num_reaches))
 
 
         ! Headers:

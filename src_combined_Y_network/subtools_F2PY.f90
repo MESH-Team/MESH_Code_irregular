@@ -27,6 +27,11 @@ contains
             end if
         end do
 
+        !if (q_sk_multi .lt. 1.0) print*, j,noQSKtable(j),q_sk_multi
+        !if (q_sk_multi .lt. 1.0) pause 101
+
+        !print*, '101',j, q_sk_multi
+
     end subroutine
 
 
@@ -38,6 +43,8 @@ contains
     real, intent(out) :: yt
     integer :: k
 
+
+
     if (xrt.le.maxval(x) .and. xrt.ge.minval(x)) then
         do k=1,kk-1
             if((x(k)-xrt)*(x(k+1)-xrt).le.0)then
@@ -47,9 +54,14 @@ contains
                 EXIT
             endif
         end do
+    else if (xrt.ge.maxval(x)) then
+        !print*, xrt, ' is above the user defined limit'
+        yt=(xrt-x(kk-1))/(x(kk)-x(kk-1))*(y(kk)-y(kk-1))+y(kk-1) ! extrapolation
+
     else
-        print*, xrt, ' is not within the limit'
+        print*, xrt, ' is below the user defined limit'
         yt = -9999.0
+
         print*, 'maxval(x)= ', maxval(x), 'and minval(x)=', minval(x),'so',  xrt, ' is not within the limit'
         print*, 'kk', kk
         print*, 'x', (x(k), k=1, kk)
@@ -118,14 +130,15 @@ end subroutine r_interpol
         integer, intent(in) :: i, j
         real, intent(in) :: q_sk_multi, So, dsc
         real, intent(out) :: y_norm, y_crit, area_n, area_c
-        real :: area_0, width_0, errorY, hydR_0!, fro
+        real :: area_0, width_0, errorY, pere_0,hydR_0,skk_0!, fro
         integer :: trapnm_app, recnm_app, iter
 
 
             elevTable = xsec_tab(1,:,i,j)
             areaTable = xsec_tab(2,:,i,j)
-            rediTable = xsec_tab(4,:,i,j)
+            pereTable = xsec_tab(3,:,i,j)
             topwTable = xsec_tab(6,:,i,j)
+            skkkTable = xsec_tab(11,:,i,j)
             !print*, 'initial ara 0', oldY(i,j)
             call r_interpol(elevTable,areaTable,nel,oldY(i,j),area_0) ! initial estimate
             if (area_0 .eq. -9999) then
@@ -133,6 +146,7 @@ end subroutine r_interpol
                 stop
             end if
             call r_interpol(elevTable,topwTable,nel,oldY(i,j),width_0) ! initial estimate
+            call r_interpol(elevTable,topwTable,nel,oldY(i,j),skk_0) ! initial estimate
 
             !print*, 'initial ara 0', area_0
 
@@ -141,13 +155,16 @@ end subroutine r_interpol
             !pause
             do while (errorY .gt. 0.00001)
                 !print*, '11', area_0
-                call r_interpol(areaTable,rediTable,nel,area_0,hydR_0)
-                if (hydR_0 .eq. -9999) then
-                    print*, 'At j = ',j,', i = ',i, 'interpolation of hydR_0 in calculating normal area was not possible'
+                call r_interpol(areaTable,pereTable,nel,area_0,pere_0)
+                if (pere_0 .eq. -9999) then
+                    print*, 'At j = ',j,', i = ',i, 'interpolation of pere_0 in calculating normal area was not possible Q=', &
+                     dsc, 'slope=',So, 'area=', area_0
                     stop
                 end if
+                hydR_0 = area_0 / pere_0
+                call r_interpol(areaTable,skkkTable,nel,area_0,skk_0)
                 !print*, '12', hydR_0
-                area_n = dsc/sk(i,j)/q_sk_multi/ hydR_0 ** (2./3.) / sqrt(So)
+                area_n = dsc/skk_0/q_sk_multi/ hydR_0 ** (2./3.) / sqrt(So)
                 !print*, '13', dsc, area_n
 
                 errorY = abs(area_n - area_0) / area_n
@@ -160,7 +177,8 @@ end subroutine r_interpol
 
             call r_interpol(areaTable,elevTable,nel,area_0,y_norm)
             if (y_norm .eq. -9999) then
-                print*, 'At j = ',j,', i = ',i, 'interpolation of y_norm in calculating normal area was not possible'
+                print*, 'At j = ',j,', i = ',i, 'interpolation of y_norm in calculating normal area was not possible, Q', &
+                dsc,'slope',So,'lateralFlow', lateralFlow(1:nx1(j),j)
                 stop
             end if
             call r_interpol(areaTable,elevTable,nel,area_c,y_crit)
@@ -175,7 +193,7 @@ end subroutine r_interpol
         integer, intent(in) :: i, j
         real, intent(in) :: q_sk_multi, So, dsc
         real, intent(out) :: y_norm, y_crit, area_n, area_c
-        real :: area_0, width_0, errorY, hydR_0!, fro
+        real :: area_0, width_0, errorY, hydR_0,skk_0!, fro
         integer :: trapnm_app, recnm_app, iter
 
 
@@ -183,6 +201,7 @@ end subroutine r_interpol
             areaTable = xsec_tab(2,:,i,j)
             rediTable = xsec_tab(4,:,i,j)
             topwTable = xsec_tab(6,:,i,j)
+            skkkTable = xsec_tab(11,:,i,j)
             !print*, 'initial ara 0', oldY(i,j)
             call r_interpol(elevTable,areaTable,nel,oldY(i,j),area_0) ! initial estimate
             !call r_interpol(elevTable,topwTable,nel,oldY(i,j),width_0) ! initial estimate
@@ -196,8 +215,9 @@ end subroutine r_interpol
             do while (errorY .gt. 0.00001)
                 !print*, '11', area_0
                 call r_interpol(areaTable,rediTable,nel,area_0,hydR_0)
+                call r_interpol(areaTable,skkkTable,nel,area_0,skk_0)
                 !print*, '12', hydR_0
-                area_n = dsc/sk(i,j)/q_sk_multi/ hydR_0 ** (2./3.) / sqrt(So)
+                area_n = dsc/skk_0/q_sk_multi/ hydR_0 ** (2./3.) / sqrt(So)
                 !print*, '13', dsc, area_n
 
                 errorY = abs(area_n - area_0) / area_n

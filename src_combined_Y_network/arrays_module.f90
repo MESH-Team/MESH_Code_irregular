@@ -7,11 +7,11 @@ module arrays_module
     !real, allocatable :: areap(:), qp(:), z(:), dqp(:)
     real, allocatable :: av11(:), av12(:), av21(:), av22(:)
     real, allocatable ::  ci1(:), ci2(:)!, dqc(:), dap(:), dac(:)
-    real, allocatable :: aso(:), f1(:), f2(:), depth(:)
+    real, allocatable :: aso(:,:), f1(:), f2(:), depth(:)
     real, allocatable :: g11inv(:), g12inv(:), g21inv(:), g22inv(:)
     real, allocatable :: b11(:), b12(:), b21(:), b22(:)
     real, allocatable :: eps2(:), eps4(:), d1(:), d2(:), u(:), c(:)
-    real, allocatable :: co(:), gso(:), dbdx(:)!,sk(:)
+    real, allocatable :: co(:), gso(:,:), dbdx(:,:)!,sk(:)
     real, allocatable :: dx(:,:), froud(:), courant(:)
     real, allocatable :: dt(:)
 
@@ -29,15 +29,18 @@ module arrays_module
     real, allocatable :: eei(:), ffi(:), exi(:), fxi(:), qpx(:,:), qcx(:)
 
     real, allocatable :: USBoundary(:,:,:), DSBoundary(:,:,:)
-    integer, allocatable :: upBoundTableEntry(:), downBoundTableEntry(:) !, normalDepth(:)
+    integer, allocatable :: upBoundTableEntry(:), downBoundTableEntry(:) !, normalDepth(:,:)
 ! change for unsteady flow
     real, allocatable :: pere(:,:),dpda(:)
 
-    real, allocatable :: oldQ(:,:), newQ(:,:), oldArea(:,:), newArea(:,:), oldY(:,:), newY(:,:)
+    real, allocatable :: oldQ(:,:), newQ(:,:), oldArea(:,:), newArea(:,:), oldY(:,:), newY(:,:), normalDepthAtNodes(:,:)
 
     integer, allocatable :: ityp(:), latFlowLocations(:,:), dataInEachLatFlow(:,:), latFlowType(:,:), latFlowXsecs(:,:)
-    real, allocatable :: lateralFlowTable(:,:,:,:), lateralFlow(:)
+    real, allocatable :: lateralFlowTable(:,:,:,:), lateralFlow(:,:)
 
+    ! for additional lateral flow of the structures
+    integer, allocatable :: latFlowLocations2(:,:), dataInEachLatFlow2(:,:), latFlowType2(:,:), latFlowXsecs2(:,:), noLatFlow2(:)
+    real, allocatable :: lateralFlowTable2(:,:,:,:), lateralFlow2(:,:)
 
     real, allocatable :: dimensionless_Cr(:,:), dimensionless_Fo(:,:), dimensionless_Fi(:,:)
     real, allocatable :: dimensionless_Di(:,:), dimensionless_Fc(:,:), dimensionless_D(:,:)
@@ -50,10 +53,12 @@ module arrays_module
     real, allocatable :: lowerLimitCount(:), higherLimitCount(:), volRemain(:,:)
 
     character(len=128), allocatable :: downstream_path(:), xSection_path(:), manning_strickler_path(:), upstream_path(:),dx_path(:)
-    character(len=128), allocatable :: QSKtablePath(:), lateralFlow_path(:)
+    character(len=128), allocatable :: QSKtablePath(:), lateralFlow_path(:), lateralFlow_path2(:)
+    character(len=128), allocatable :: bankLocation_path(:)
+    real, allocatable :: leftBank(:,:), rightBank(:,:), skLeft(:,:), skMain(:,:), skRight(:,:)
 
     integer, allocatable :: currentROutingDiffusive(:), notSwitchRouting(:)
-    real :: minDx, maxCelerity
+    real :: minDx, maxCelerity,maxCelDx
 
     integer, allocatable :: currentRoutingNormal(:,:), routingNotChanged(:,:)
 
@@ -78,6 +83,9 @@ contains
 
         !allocate(normalDepth(totalChannels))    !! this parameter indicates which channel will have full diffusive or partial diffusive routing.
 
+        allocate(normalDepthAtNodes(num_points,totalChannels))
+        normalDepthAtNodes = 0.
+
 
         allocate(areap(num_points,totalChannels))
         allocate(qp(num_points,totalChannels))
@@ -94,7 +102,8 @@ contains
 
         allocate(ci1(num_points))
         allocate(ci2(num_points))
-        allocate(aso(num_points))
+        allocate(aso(num_points,totalChannels))
+        aso = 0.
         allocate(depth(num_points))
         allocate(f1(num_points))
         allocate(f2(num_points))
@@ -113,9 +122,18 @@ contains
         allocate(u(num_points))
         allocate(c(num_points))
         allocate(sk(num_points,totalChannels))
+
+        allocate(leftBank(num_points,totalChannels))
+        allocate(rightBank(num_points,totalChannels))
+        allocate(skLeft(num_points,totalChannels))
+        allocate(skMain(num_points,totalChannels))
+        allocate(skRight(num_points,totalChannels))
+
         allocate(co(num_points))
-        allocate(gso(num_points))
-        allocate(dbdx(num_points))
+        allocate(gso(num_points,totalChannels))
+        gso = 0.
+        allocate(dbdx(num_points,totalChannels))
+        dbdx = 0.
         allocate(dt(num_points))
         allocate(ityp(num_points))
         allocate(dx(num_points-1,totalChannels))
@@ -150,7 +168,7 @@ contains
 
         allocate(lateralFlowTable(2, maxTableEntry2, totalLatFlow, totalChannels))
         allocate(dataInEachLatFlow(totalLatFlow, totalChannels))
-        allocate(lateralFlow(num_points))
+        allocate(lateralFlow(num_points, totalChannels)) ! change 20210311
 
 
 
