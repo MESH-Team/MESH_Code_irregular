@@ -1,5 +1,12 @@
 subroutine readXsection(k,lftBnkMann,rmanning_main,rgtBnkMann,leftBnkX_given,rghtBnkX_given,timesDepth,num_reach)
 
+! lftBnkMann =  mannings at left bank = nCC
+! rmanning_main =  mannings at main chn = n
+! lftBnkMann =  mannings at left bank = nCC
+! lftBnkMann =  mannings at left bank = nCC
+
+! This sub routine reads routelink cross sections only that have only 8 points in its data and can be applied to compound trapozoidal section only.
+
     use constants_module
     use arrays_module
     use arrays_section_module
@@ -14,10 +21,11 @@ subroutine readXsection(k,lftBnkMann,rmanning_main,rgtBnkMann,leftBnkX_given,rgh
 ! the top width calculation needs to check
     real xcs(maxTableLength), ycs(maxTableLength), el1(nel,3),a1(nel,3),peri1(nel,3),redi1(nel,3),redi1All(nel)
     real conv1(nel,3), tpW1(nel,3), diffArea(nel,3), newI1(nel,3), diffPere(nel,3), newdPdA(nel), diffAreaAll(nel), diffPereAll(nel)
+    real newdKdA(nel)
     integer i_start(nel), i_end(nel), i_area, i_find, i, j, jj, num
     real el_min, el_max, el_range, el_incr, el_now, x1, y1, x2, y2, x_start, x_end, waterElev, leftBnkX,rghtBnkX
     real f2m, cal_area, cal_peri, cal_topW, cal_dist, cal_tri_area, cal_multi_area, cal_perimeter, diffAreaCenter
-    real compoundSKK(nel), compoundMann, el_min_1, elev(nel)
+    real compoundSKK(nel), compoundMann, el_min_1, elev(nel), addedDepth
     integer i1, i2
 
     real allXcs(maxTableLength,3), allYcs(maxTableLength,3)
@@ -36,7 +44,7 @@ subroutine readXsection(k,lftBnkMann,rmanning_main,rgtBnkMann,leftBnkX_given,rgh
 
     !print*, lftBnkMann , rmanning_main , rgtBnkMann
     !pause
-
+    addedDepth = 0.01
 !     Open data file
     leftBnkX=leftBnkX_given
     rghtBnkX=rghtBnkX_given
@@ -174,7 +182,7 @@ subroutine readXsection(k,lftBnkMann,rmanning_main,rgtBnkMann,leftBnkX_given,rgh
       allYcs(6:totalNodes(2)+1,2) = allYcs(5:totalNodes(2),2)
       allXcs(5,2) = (allXcs(4,2)+allXcs(6,2))/2.0
       !allYcs(5,2) = allYcs(4,2) - (allYcs(3,2)-allYcs(4,2))*0.01
-      allYcs(5,2) = allYcs(4,2) - 0.01
+      allYcs(5,2) = allYcs(4,2) - addedDepth
       totalNodes(2) = totalNodes(2) + 1
 
       el_min_1 = el_min
@@ -193,10 +201,10 @@ subroutine readXsection(k,lftBnkMann,rmanning_main,rgtBnkMann,leftBnkX_given,rgh
       !pause 2020
 
       elev(1) = el_min
-      elev(2) = el_min + 0.01/4.
-      elev(3) = el_min + 0.01/4.*2.
-      elev(4) = el_min + 0.01/4.*3.
-      elev(5) = el_min + 0.01
+      elev(2) = el_min + addedDepth/4.
+      elev(3) = el_min + addedDepth/4.*2.
+      elev(4) = el_min + addedDepth/4.*3.
+      elev(5) = el_min + addedDepth
 
       el_incr=el_range/real(nel-6.0)
 
@@ -206,15 +214,15 @@ subroutine readXsection(k,lftBnkMann,rmanning_main,rgtBnkMann,leftBnkX_given,rgh
 
 
 !     output cs data
-      open(11,file=trim(xSection_path(num_reach))//file_num//'.dat')
-      do i=1,num
-          write(11,*)xcs(i),ycs(i) !changing all into m unit
-      enddo
-      close(11)
+      !open(11,file=trim(xSection_path(num_reach))//file_num//'.dat')
+      !do i=1,num
+      !    write(11,*)xcs(i),ycs(i) !changing all into m unit
+      !enddo
+      !close(11)
 
-      open(11,file=trim(xSection_path(num_reach))//file_num//'_lines')
-      open(22,file=trim(xSection_path(num_reach))//file_num//'_tab')
-      write(22,'(140a)')'Elev(m)   Area(m2)   Peri(m)   Radi(m)   Conv(m3/s)   topWidth(m)   newI1(m3)   dPdA(1/m)   rmanning'  ! Hu changed
+      !open(11,file=trim(xSection_path(num_reach))//file_num//'_lines')
+      !open(22,file=trim(xSection_path(num_reach))//file_num//'_tab')
+      !write(22,'(160a)')'Elev(m)  Area(m2)  Peri(m)  Radi(m)  Conv(m3/s)  topWidth(m)   newI1(m3)   dPdA(1/m)  dKdA(m/s)   rmanning'  ! Hu changed
 
     xcs = 0.
     ycs = 0.
@@ -270,7 +278,7 @@ subroutine readXsection(k,lftBnkMann,rmanning_main,rgtBnkMann,leftBnkX_given,rgh
             else
                 x_start=x1+(el_now-y1)/(y2-y1)*(x2-x1)
             endif
-            write(11,*)x_start,el_now
+            !write(11,*)x_start,el_now
 
             x1=xcs(i_end(i))
             x2=xcs(i_end(i)+1)
@@ -285,8 +293,8 @@ subroutine readXsection(k,lftBnkMann,rmanning_main,rgtBnkMann,leftBnkX_given,rgh
 
             cal_topW=x_end-x_start+cal_topW
 
-            write(11,*)x_end,el_now
-            write(11,*)'NaN NaN'
+            !write(11,*)x_end,el_now
+            !write(11,*)'NaN NaN'
 
             i1=i_start(i)
             i2=i_end(i)
@@ -355,19 +363,27 @@ subroutine readXsection(k,lftBnkMann,rmanning_main,rgtBnkMann,leftBnkX_given,rgh
         !newdPdA(j)=diffAreaAll(j)/diffPereAll(j)
         if (j .eq. 1) then
             newdPdA(j) = sum(peri1(j,:)) / sum(a1(j,:))
+            newdKdA(j) = sum(conv1(j,:)) / sum(a1(j,:))
         else
             newdPdA(j)= (sum(peri1(j,:)) - sum(peri1(j-1,:))) / (sum(a1(j,:)) - sum(a1(j-1,:)))
+            newdKdA(j)= (sum(conv1(j,:)) - sum(conv1(j-1,:))) / (sum(a1(j,:)) - sum(a1(j-1,:)))
         end if
 
 
-        compoundMann = sqrt((abs(peri1(j,1))*lftBnkMann ** 2. + abs(peri1(j,2))*rmanning_main ** 2.+&
-         abs(peri1(j,3))*rgtBnkMann ** 2.) / (abs(peri1(j,1))+abs(peri1(j,2))+abs(peri1(j,3))))
-        compoundSKK(j) = 1. / compoundMann
+
 
         !print*, abs(tpW1(j,1)), abs(tpW1(j,2)), abs(tpW1(j,3)),lftBnkMann,rmanning_main,rgtBnkMann
         !pause
 
         redi1All(j)=sum(a1(j,:)) /sum(peri1(j,:))
+
+        compoundMann = sqrt((abs(peri1(j,1))*lftBnkMann ** 2. + abs(peri1(j,2))*rmanning_main ** 2.+&
+         abs(peri1(j,3))*rgtBnkMann ** 2.) / (abs(peri1(j,1))+abs(peri1(j,2))+abs(peri1(j,3))))
+        compoundSKK(j) = 1. / compoundMann
+
+
+        ! test 20210519
+        !compoundSKK(j) = sum(conv1(j,:)) / ( sum(a1(j,:)) * (redi1All(j) ** (2./3.)) )
 
 
 
@@ -376,11 +392,9 @@ subroutine readXsection(k,lftBnkMann,rmanning_main,rgtBnkMann,leftBnkX_given,rgh
 
         !print*, sum(newI1(j,:))
         !write(22,10)el1(j,1),sum(a1(j,:)),sum(peri1(j,:)),redi1All(j),sum(conv1(j,:)),    &
-        !   sum(tpW1(j,:)),sum(newI1(j,:)),newdPdA(j)
-        write(22,10)el1(j,1),sum(a1(j,:)),sum(peri1(j,:)),redi1All(j),sum(conv1(j,:)),    &
-           abs(tpW1(j,1))+abs(tpW1(j,2))+abs(tpW1(j,3)),sum(newI1(j,:)),newdPdA(j), compoundSKK(j)
+        !   abs(tpW1(j,1))+abs(tpW1(j,2))+abs(tpW1(j,3)),sum(newI1(j,:)),newdPdA(j),newdKdA(j),compoundSKK(j)
 
-10      format(f9.4,3f12.3,2f20.3,3f16.3)
+10      format(f9.4,3f12.3,2f20.3,4f16.3)
         ! new change 20200107 to make the model faster
         xsec_tab(1,j,k,num_reach) = el1(j,1)
         xsec_tab(2,j,k,num_reach) = sum(a1(j,:))
@@ -390,6 +404,7 @@ subroutine readXsection(k,lftBnkMann,rmanning_main,rgtBnkMann,leftBnkX_given,rgh
         xsec_tab(6,j,k,num_reach) = abs(tpW1(j,1))+abs(tpW1(j,2))+abs(tpW1(j,3))
         xsec_tab(7,j,k,num_reach) = sum(newI1(j,:))
         xsec_tab(8,j,k,num_reach) = newdPdA(j)
+        xsec_tab(9,j,k,num_reach) = newdKdA(j)
         xsec_tab(11,j,k,num_reach) = compoundSKK(j)
         !print*,  el1(j,1), a1(j,1)+a1(j,2)+a1(j,3), peri1(j,1)+peri1(j,2)+peri1(j,3)
         !pause
@@ -400,8 +415,8 @@ subroutine readXsection(k,lftBnkMann,rmanning_main,rgtBnkMann,leftBnkX_given,rgh
       end do
 !pause 2030
 
-      close(11)
-      close(22)
+      !close(11)
+      !close(22)
 
 
       z(k,num_reach)= el_min

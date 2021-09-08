@@ -13,6 +13,8 @@ module var_module
     !integer, allocatable :: nx1(:), noQSKtable(:)
     integer :: ncomp
 
+    real :: minDt, maxDt
+
     !integer :: ntim, mxncomp
     !integer :: chshp
     !* variables for branching channels
@@ -20,7 +22,7 @@ module var_module
     real :: theta, thetas, thesinv, alfa2, alfa4, phi
     !real :: rhs1, rhs2, c11, c12, c21, c22
     !real :: yy, skk, qq  !vv, us,
-    real :: dxini,lastKnownDiffuDT, skk!, tfin ntim
+    real :: dxini,lastKnownDiffuDT, skk, minDiffuLm, maxDiffuLm!, tfin ntim
     integer :: applyNaturalSection  ! if 1, then attribute table will be activated, if 0, then rectangular channel will be applied
 
 end module var_module

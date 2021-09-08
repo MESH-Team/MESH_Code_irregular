@@ -255,7 +255,7 @@ subroutine mesh_diffusive_backward(dtini_given, t0, t, tfin, saveInterval,j)
     real :: skkkTable_1(nel)
     real :: pereTable_1(nel),depthYi,tempDepthi_1,tempCo_1,temp_q_sk_multi_1,tempY_1,tempArea_1,tempRadi_1,tempbo_1,ffy
     real :: ffy_1, ffy_2, ffy_3, tempCo_2, tempCo_3, tempsfi_2, tempsfi_3
-    real :: ffprime,tempDepthi_1_new,tempsfi_1,toll, dkda, tempPere_1, tempsk_1, tempY_2, tempY_3
+    real :: ffprime,tempDepthi_1_new,tempsfi_1,toll, dkda, tempPere_1, tempsk_1, tempY_2, tempY_3, usFroud
     integer :: depthCalOk(ncomp), newtonRaphson
 
     integer :: i, pp
@@ -639,16 +639,19 @@ subroutine mesh_diffusive_backward(dtini_given, t0, t, tfin, saveInterval,j)
 
 
                         end do
-                        end if
+                        end if      ! calculating depth based on d/s WL starts
 
-                        !    if (t .gt. 2225) then
-                        !        if (j .eq. 7) then
-                        !            print*, 'time=',t,j,i-1,iii, tempDepthi_1, qp(i-1,j), newY(ncomp,j)-z(ncomp,j),qp(ncomp,j)
-                        !            !pause 2000
-                        !        end if
-                        !    end if
-                        !print*, 'ffy=',ffy,'ffprime', ffprime
                         newY(i-1,j) = tempDepthi_1 + z(i-1,j)
+
+                        call r_interpol(elevTable_1,areaTable_1,nel,tempY_1,tempArea_1)
+                        call r_interpol(elevTable_1,topwTable_1,nel,tempY_1,tempbo_1)
+
+                        usFroud = abs(qp(i-1,j))/sqrt(grav*tempArea_1**3.0/tempbo_1)
+
+                        !if (usFroud .ge. 1.0) then
+                        !   call normal_crit_y(i-1, j, q_sk_multi, slope, qp(i-1,j), newY(i-1,j), temp, newArea(i-1,j), temp)
+                        !   depthCalOk(i-1) = 0
+                        !end if
 
                         if (newY(i-1,j) .gt. 10.0**5.) newY(i-1,j) = 10.0**5.
 !                        end if
@@ -691,8 +694,8 @@ subroutine mesh_diffusive_backward(dtini_given, t0, t, tfin, saveInterval,j)
 
 
 
-            !celerity(1:ncomp,j) =  sum(celerity2(1:ncomp)) / ncomp
-            celerity(1:ncomp,j) = minval(celerity2(1:ncomp)) ! change 20210423
+            celerity(1:ncomp,j) =  sum(celerity2(1:ncomp)) / ncomp ! change 20210524
+            !celerity(1:ncomp,j) = minval(celerity2(1:ncomp)) ! change 20210423
 
 
             if (celerity(1,j) .lt. 0.5) celerity(1:ncomp,j) = 0.5
@@ -703,11 +706,11 @@ subroutine mesh_diffusive_backward(dtini_given, t0, t, tfin, saveInterval,j)
         diffusivity(1:ncomp,j)=sum(diffusivity2(1:ncomp)) / ncomp
         !diffusivity = 1000.
 		do i = 1, ncomp
-			if (diffusivity(i,j) .gt. 2000.) diffusivity(i,j) = 2000. !!! Test
-			if (diffusivity(i,j) .lt. 50.) diffusivity(i,j) = 50. !!! Test
+			if (diffusivity(i,j) .gt. maxDiffuLm) diffusivity(i,j) = maxDiffuLm !!! Test
+			if (diffusivity(i,j) .lt. minDiffuLm) diffusivity(i,j) = minDiffuLm !!! Test
 		end do
 
-		!diffusivity = 1000.         ! Test
+		!diffusivity = 200.         ! Test
 		!celerity = 1.              ! Test
 
 

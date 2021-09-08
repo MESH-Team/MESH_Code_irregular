@@ -90,6 +90,8 @@ contains
         allocate(areap(num_points,totalChannels))
         allocate(qp(num_points,totalChannels))
         allocate(z(num_points,totalChannels))
+        z=0. ! initialization
+
         allocate(av11(num_points))
         allocate(av12(num_points))
         allocate(av21(num_points))

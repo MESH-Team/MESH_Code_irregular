@@ -24,6 +24,9 @@ subroutine calculateDT(initialTime, time, saveInterval, maxAllowCourantNo, tfin,
     !dtini = min(dtini, given_dt)
     !dtini = given_dt
 
+    maxDt = max(dtini, maxDt)
+    minDt = min(dtini, minDt)
+
     a = floor( (time-initialTime*60.) /( saveInterval/60. ))            ! units:: time : min;  ! initialTime : hour ! saveInterval : sec
     b = floor( (time-initialTime*60.) +dtini/60.)/( saveInterval/60. )
 

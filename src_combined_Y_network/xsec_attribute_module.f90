@@ -19,7 +19,7 @@ module xsec_attribute_module
 
 
         ! Headers:
-        ! Elev(m)    Area(m2)     Peri(m)      Radi(m)   Conv(m3/s)    topWidth(m)    newI1(m3)    dPdA(1/m)     dbdxp(-)    dbdxc(-)      I2p     I2c
+        ! Elev(m)    Area(m2)     Peri(m)      Radi(m)   Conv(m3/s)    topWidth(m)    newI1(m3)    dPdA(1/m)     sk    dkdA    dbdxp(-)    dbdxc(-)      I2p     I2c
 
 
 

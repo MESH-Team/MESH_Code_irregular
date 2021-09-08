@@ -66,6 +66,7 @@ contains
         print*, 'kk', kk
         print*, 'x', (x(k), k=1, kk)
         print*, 'y', (y(k), k=1, kk)
+        pause 888
         !stop
         !if (xrt.le. minval(x)) yt=minval(y)
         !if (xrt.ge. maxval(x)) yt=maxval(y)
@@ -73,6 +74,22 @@ contains
     !r_interpol = yt
     !return
 end subroutine r_interpol
+
+
+!+++-------------------------------------------------------------------
+!+ Compute depth at a given reach using conservation of total energy head.
+!+ The iteration method is Newton-Raphson
+!+
+!+++-------------------------------------------------------------------
+subroutine newtonRaphsonUdU()
+    implicit none
+    !real, intent(in) :: i
+    !integer :: iii
+
+
+end subroutine
+
+
 
 
 !+++-------------------------------------------------------------------
@@ -137,6 +154,56 @@ end subroutine r_interpol
             elevTable = xsec_tab(1,:,i,j)
             areaTable = xsec_tab(2,:,i,j)
             pereTable = xsec_tab(3,:,i,j)
+            convTable = xsec_tab(5,:,i,j)
+            topwTable = xsec_tab(6,:,i,j)
+            !print*, 'initial ara 0', oldY(i,j)
+            call r_interpol(convTable,areaTable,nel,dsc/sqrt(So),area_n)
+            call r_interpol(convTable,elevTable,nel,dsc/sqrt(So),y_norm)
+
+            call r_interpol(elevTable,areaTable,nel,oldY(i,j),area_0) ! initial estimate
+
+            call r_interpol(elevTable,topwTable,nel,oldY(i,j),width_0) ! initial estimate
+
+            !print*, 'initial ara 0', area_0
+
+            area_c=area_0
+            errorY = 100.
+            !pause
+            do while (errorY .gt. 0.0001)
+                area_c = (dsc * dsc * width_0 / grav) ** (1./3.)
+                errorY = abs(area_c - area_0)
+
+                call r_interpol(areaTable,topwTable,nel,area_c, width_0)
+                area_0 = area_c
+
+            enddo
+
+            !pause
+
+            call r_interpol(areaTable,elevTable,nel,area_c,y_crit)
+            if (y_norm .eq. -9999) then
+                print*, 'At j = ',j,', i = ',i, 'interpolation of y_norm in calculating normal area was not possible, Q', &
+                dsc,'slope',So,'lateralFlow', lateralFlow(1:nx1(j),j)
+                stop
+            end if
+
+    end subroutine normal_crit_y
+
+    subroutine normal_crit_y_old(i, j, q_sk_multi, So, dsc, y_norm, y_crit, area_n, area_c)
+
+
+        implicit none
+
+        integer, intent(in) :: i, j
+        real, intent(in) :: q_sk_multi, So, dsc
+        real, intent(out) :: y_norm, y_crit, area_n, area_c
+        real :: area_0, width_0, errorY, pere_0,hydR_0,skk_0!, fro
+        integer :: trapnm_app, recnm_app, iter
+
+
+            elevTable = xsec_tab(1,:,i,j)
+            areaTable = xsec_tab(2,:,i,j)
+            pereTable = xsec_tab(3,:,i,j)
             topwTable = xsec_tab(6,:,i,j)
             skkkTable = xsec_tab(11,:,i,j)
             !print*, 'initial ara 0', oldY(i,j)
@@ -153,7 +220,7 @@ end subroutine r_interpol
             area_c=area_0
             errorY = 100.
             !pause
-            do while (errorY .gt. 0.00001)
+            do while (errorY .gt. 0.0001)
                 !print*, '11', area_0
                 call r_interpol(areaTable,pereTable,nel,area_0,pere_0)
                 if (pere_0 .eq. -9999) then
@@ -167,11 +234,12 @@ end subroutine r_interpol
                 area_n = dsc/skk_0/q_sk_multi/ hydR_0 ** (2./3.) / sqrt(So)
                 !print*, '13', dsc, area_n
 
-                errorY = abs(area_n - area_0) / area_n
+                errorY = abs(area_n - area_0)
                 area_0 = area_n
                 !print*, 'area_0', area_n,'hydR_0', hydR_0
                 area_c = (dsc * dsc * width_0 / grav) ** (1./3.)
                 call r_interpol(areaTable,topwTable,nel,area_c, width_0)
+                !print*,j,i,area_n, errorY
                 !fro=abs(dsc)/sqrt(grav*area_c**3.0/width_0)
             enddo
 
@@ -183,57 +251,101 @@ end subroutine r_interpol
             end if
             call r_interpol(areaTable,elevTable,nel,area_c,y_crit)
 
-    end subroutine normal_crit_y
+    end subroutine normal_crit_y_old
 
-    subroutine normal_y(i, j, q_sk_multi, So, dsc, y_norm, y_crit, area_n, area_c)
+
+!+++-------------------------------------------------------------------------------
+!+ computation of alternate depth
+!+++-------------------------------------------------------------------------------
+    subroutine alternate_depth(i, j, dsc, y_n, y_crit, y_alt, area_alt)
 
 
         implicit none
 
         integer, intent(in) :: i, j
-        real, intent(in) :: q_sk_multi, So, dsc
-        real, intent(out) :: y_norm, y_crit, area_n, area_c
-        real :: area_0, width_0, errorY, hydR_0,skk_0!, fro
-        integer :: trapnm_app, recnm_app, iter
+        real, intent(in) :: dsc, y_n, y_crit
+        real, intent(out) :: y_alt, area_alt
+        real :: area_0, area_n, width_n, vel, froud, y1, y2, toll, h1, vel_0, y_0
+        integer :: iii
 
 
-            elevTable = xsec_tab(1,:,i,j)
-            areaTable = xsec_tab(2,:,i,j)
-            rediTable = xsec_tab(4,:,i,j)
-            topwTable = xsec_tab(6,:,i,j)
-            skkkTable = xsec_tab(11,:,i,j)
-            !print*, 'initial ara 0', oldY(i,j)
-            call r_interpol(elevTable,areaTable,nel,oldY(i,j),area_0) ! initial estimate
-            !call r_interpol(elevTable,topwTable,nel,oldY(i,j),width_0) ! initial estimate
-            !print*, 'here2'
+        elevTable = xsec_tab(1,:,i,j)
+        areaTable = xsec_tab(2,:,i,j)
+        topwTable = xsec_tab(6,:,i,j)
+        !
+        call r_interpol(elevTable,areaTable,nel,y_n,area_n)
+        if (area_n .eq. -9999) then
+            print*, 'At j = ',j,', i = ',i, 'interpolation of area_0 in calculating normal area was not possible'
+            stop
+        end if
+        call r_interpol(elevTable,topwTable,nel,y_n,width_n)  ! initial estimate
 
-            !print*, 'initial ara 0', area_0
+        vel = dsc / area_n
+        h1 = y_n + vel**2.0 / (2.0 * grav)
 
-            !area_c=area_0
-            errorY = 100.
-            !pause
-            do while (errorY .gt. 0.00001)
-                !print*, '11', area_0
-                call r_interpol(areaTable,rediTable,nel,area_0,hydR_0)
-                call r_interpol(areaTable,skkkTable,nel,area_0,skk_0)
-                !print*, '12', hydR_0
-                area_n = dsc/skk_0/q_sk_multi/ hydR_0 ** (2./3.) / sqrt(So)
-                !print*, '13', dsc, area_n
+        froud=abs(dsc)/sqrt(grav*area_n**3.0/width_n)
 
-                errorY = abs(area_n - area_0) / area_n
-                area_0 = area_n
-                !print*, 'area_0', area_n,'hydR_0', hydR_0
-                !area_c = (dsc * dsc * width_0 / grav) ** (1./3.)
-                !call r_interpol(areaTable,topwTable,nel,area_c, width_0)
+        if (froud .gt. 1.0) then
+            y1 = y_crit             ! lower limit of alt depth
+            y2 = 1000.+z(i,j)       ! upper limit of alt depth
+        else if (froud .lt. 1.0) then
+            y1 = z(i,j)             ! lower limit of alt depth
+            y2 = y_crit             ! upper limit of alt depth
+        end if
 
-                !fro=abs(dsc)/sqrt(grav*area_c**3.0/width_0)
-            enddo
-            call r_interpol(areaTable,elevTable,nel,area_0,y_norm)
-            !call r_interpol(areaTable,elevTable,nel,area_c,y_crit)
-            y_crit = -9999.
-            area_c = -9999.
+        toll = 100.
+        iii = 0
 
-    end subroutine normal_y
+        do while (toll .gt. 0.001)
+            iii = iii + 1
+            y_0 = (y1 + y2) / 2.0
+            call r_interpol(elevTable,areaTable,nel,y_0,area_0) ! initial estimate
+            vel_0 = dsc / area_0
+            if (vel_0**2.0 / (2.0 * grav) .lt. h1 - y_0) then ! velocity head is small: y_0 needs to be bigger
+                y1 = y_0
+            else if (vel_0**2.0 / (2.0 * grav) .gt. h1 - y_0) then! velocity head is big: y_0 needs to be smaller
+                y2 = y_0
+            end if
+            toll = abs(h1 - y_0 - vel_0**2.0 / (2.0 * grav))
+        end do
+
+        y_alt = y_0
+        call r_interpol(elevTable,areaTable,nel,y_alt,area_alt)
+    end subroutine alternate_depth
+
+!+++-------------------------------------------------------------------------------
+!+ computation of conjugate depth
+!+++-------------------------------------------------------------------------------
+    subroutine conjugate_depth(i, j, dsc, y_n, y_cnj, area_cnj)
+
+
+        implicit none
+
+        integer, intent(in) :: i, j
+        real, intent(in) :: dsc, y_n
+        real, intent(out) :: y_cnj, area_cnj
+        real :: area_0, area_n, width_n, vel, froud, y1, y2, toll, h1, vel_0, y_0
+        integer :: iii
+
+
+        elevTable = xsec_tab(1,:,i,j)
+        areaTable = xsec_tab(2,:,i,j)
+        topwTable = xsec_tab(6,:,i,j)
+        !
+        !depth_n = y_n - z(i,j)
+        call r_interpol(elevTable,areaTable,nel,y_n,area_n)
+        if (area_n .eq. -9999) then
+            print*, 'At j = ',j,', i = ',i, 'interpolation of area_0 in calculating normal area was not possible'
+            stop
+        end if
+        call r_interpol(elevTable,topwTable,nel,y_n,width_n)
+
+        froud=abs(dsc)/sqrt(grav*area_n**3.0/width_n)
+
+        y_cnj = ((sqrt(1.0+8.0*froud**2.0)-1.0)/2.0) * (y_n-z(i,j)) + z(i,j)
+
+        call r_interpol(elevTable,areaTable,nel,y_cnj,area_cnj)
+    end subroutine conjugate_depth
 
 !+++----------------------------------------------------------------------------
 !+ computation of critical depth in regular/trapezoidal x-section using
