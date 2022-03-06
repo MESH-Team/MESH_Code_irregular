@@ -50,9 +50,9 @@ subroutine create_I2(k,ncomp, num_reach)
     cal_new_I2p=0.0
     cal_new_I2c=0.0
 
-    write(file_num,'(i4.4)')k
-    open(22,file=trim(xSection_path(num_reach))//file_num//'_I2')
-    write(22,'(30a)')' Elev(m)    dbdxp(-)    dbdxc(-)      I2p     I2c'
+    !write(file_num,'(i4.4)')k
+    !open(22,file=trim(xSection_path(num_reach))//file_num//'_I2')
+    !write(22,'(30a)')' Elev(m)    dbdxp(-)    dbdxc(-)      I2p     I2c'
 
     increm=currentElev(2)-currentElev(1)
 
@@ -75,11 +75,11 @@ subroutine create_I2(k,ncomp, num_reach)
                 cal_new_I2c(i)=cal_new_I2c(i)+(currentElev(i)-currentElev(pp)+0.5*increm)*((dbdxc(pp)+dbdxc(pp-1))/2)*increm
             end do
         end if
-        write(22,*)currentElev(i),dbdxp(i),dbdxc(i),cal_new_I2p(i),cal_new_I2c(i)
+        !write(22,*)currentElev(i),dbdxp(i),dbdxc(i),cal_new_I2p(i),cal_new_I2c(i)
 !10      format(3f12.2)
-        xsec_tab(9,i,k,num_reach) = cal_new_I2p(i)
-        xsec_tab(10,i,k,num_reach) = cal_new_I2c(i)
+        xsec_tab(10,i,k,num_reach) = cal_new_I2p(i)
+        xsec_tab(12,i,k,num_reach) = cal_new_I2c(i)
     end do
-    close (22)
+    !close (22)
 
 end subroutine create_I2

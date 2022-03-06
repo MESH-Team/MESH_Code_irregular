@@ -34,8 +34,6 @@ program mesh
 
     real :: r_interpo_nn
 
-    real :: maxDx
-
     character(len=128) :: output_path, other_input, ndep_path
     character(len=128) :: path
 
@@ -115,60 +113,25 @@ program mesh
     !input_ARBNM_added_LatFlow_from_structure_interpol_diffu.txt",status='unknown')
     !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\input_remapDx_dyna_allRectang_varWidth.txt",status='unknown')
     !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\routeLink_model\input_file_1",status='unknown')
+    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\input_ARBNM_latQ_as_bound_try3.txt",status='unknown')
+    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\input_ARBNM_latQ_as_bound_3zones.txt",status='unknown')
+    !open(unit=1,file="D:\Project_Works\JTTI\codeTest_rectangle\input.txt",status='unknown')
+    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\routeLink_model\Geometry_RouteLink_1_2_3_4_5\input.txt",status='unknown')
+    !open(unit=1,file="D:\Project_Works\JTTI\codeTest_rectangle\input_AmiteJ3.txt",status='unknown')
 
-
-    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\input_ARBNM_latQ_as_bound_3zones.txt",status='unknown')    ! surveyed section run
-    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\routeLink_model\&
-    !    Geometry_RouteLink_1_2_3_4_5\input_orig.txt",status='unknown')    ! original NHD section run
-    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\routeLink_model\Geometry_RouteLink_1_2_3_4_5\input.txt",status='unknown')    ! modified NHD section run
-
-    !open(unit=1,file="D:\Project_Works\JTTI\Florence_NC\Model\input_file_737_final_interpolatedSections",status='unknown')     ! Florence final, interpolated cross sections
-    !open(unit=1,file="D:\Project_Works\JTTI\Florence_NC\Model\input_file_737_final_nonInterpolatedSections",status='unknown')     ! Florence two node chn, non-interpolated cross sections
-    !open(unit=1,file="D:\Project_Works\JTTI\Florence_NC\Model\input_file_737_final_interpolatedSectionsTest",status='unknown')      ! Florence Test case for diffu, celerity, roughness
-    open(unit=1,file="D:\Project_Works\JTTI\Florence_NC\Model\Test_interpolatedSection_2n\input_file_737",status='unknown')      ! Florence Test case for checking the number of interpolated sections
-    !open(unit=1,file="D:\Project_Works\JTTI\Florence_NC\Model\Test_interpolatedSection_4n\input_file_737",status='unknown')      ! Florence Test case for checking the number of interpolated sections
-    !open(unit=1,file="D:\Project_Works\JTTI\Florence_NC\Model\Test_interpolatedSection_5n\input_file_737",status='unknown')      ! Florence Test case for checking the number of interpolated sections
+    !open(unit=1,file="D:\Project_Works\JTTI\Florence_NC\Model\input_file_737",status='unknown')
     !open(unit=1,file="D:\Project_Works\JTTI\Florence_NC\Model\input_file_738_dummy",status='unknown')
-
+    !open(unit=1,file="D:\Project_Works\JTTI\Florence_NC\Model\input_file_345",status='unknown')
     !open(unit=1,file="D:\Project_Works\JTTI\codeTest_rectangle\input.txt",status='unknown')
     !open(unit=1,file="D:\Project_Works\JTTI\codeTest_rectangle\input_Y_chn.txt",status='unknown')
     !open(unit=1,file="D:\Project_Works\JTTI\codeTest_rectangle\input_multi_chn_flrnc.txt",status='unknown')
     !open(unit=1,file="D:\Project_Works\JTTI\codeTest_rectangle\Florence_singleLine_ntwrk_test2\&
     !input_multi_chn_flrnc2.txt",status='unknown')
 
-
-    !(unit=1,file="D:\Project_Works\JTTI\codeTest_rectangle\input.txt",status='unknown')
-
-    open(unit=1,file="D:\Project_Works\JTTI\Goodwin_Creek_Experimental_Watershed\Devided_reaches\&
-    input_file_added_reaches1982.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\Goodwin_Creek_Experimental_Watershed\Devided_reaches\&
-    !input_file_added_reaches1987.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\Goodwin_Creek_Experimental_Watershed\Devided_reaches\&
-    !input_file_added_reaches1997.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\Goodwin_Creek_Experimental_Watershed\Devided_reaches\&
-    !input_file_added_reaches1998.txt",status='unknown')
-
-    !open(unit=1,file="D:\Project_Works\JTTI\codeTest_rectangle\compoundTrapoCS\input.txt",status='unknown')
-
-    !open(unit=1,file="D:\Project_Works\JTTI\Mississippi_NHD\NHD_Data\input_file_1",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\Mississippi_NHD\NHD_DividedReach\input_file_4",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\Mississippi_NHD\NHD_DividedReach_2\input_file_7",status='unknown')  ! NHD Mississippi Final
-
-    !!! tests for paper !!!
-    !!! run for paper !!!
-    open(unit=1,file="D:\Project_Works\JTTI\Moussa_etal\Test_Case\Single_Trapo\input_single_chn.txt",status='unknown')
-    open(unit=1,file="D:\Project_Works\JTTI\Moussa_etal\Test_Case\compoundTrapoCS\input_Y_chn.txt",status='unknown')
-    open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\routeLink_model\Geometry_RouteLink_1_2_3_4_5\&
-    input_CNT.txt",status='unknown')    ! modified NHD section run
-    open(unit=1,file="D:\Project_Works\JTTI\Goodwin_Creek_Experimental_Watershed\Devided_reaches\&
-    input_file_added_reaches1982.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\Mississippi_NHD\NHD_DividedReach_2\input_file_7",status='unknown')  ! NHD Mississippi Final
-    !open(unit=1,file="D:\Project_Works\JTTI\Florence_NC\Model\Test_interpolatedSection_2n\input_file_737",status='unknown')
-    open(unit=1,file="D:\MESH_with_Luiz\MESH_Code_irregular-Update_20210430\NHD_Y_Channel\input\&
-     input_naturalChannel_exact_20201012.txt",status='unknown')
-
-    open(unit=1,file="D:\Project_Works\JTTI\Moussa_etal\Test_Case\compoundTrapoCS\input_Y_chn.txt",status='unknown')
-
+    !open(unit=1,file="D:\Project_Works\JTTI\Goodwin_Creek_Experimental_Watershed\Temp\input_file_9",status='unknown')
+    !open(unit=1,file="D:\Project_Works\JTTI\Goodwin_Creek_Experimental_Watershed\&
+    !Devided_reaches\input_file_added_reaches",status='unknown')
+    open(unit=1,file="D:\Project_Works\JTTI\codeTest_rectangle\input.txt",status='unknown')
 
 
     print*, 'Reading input file'
@@ -317,51 +280,51 @@ program mesh
 
 
     ! if 2nd type of lateral flow is present
-    if (lateralFLowAdditional .eq. 1) then
+    !if (lateralFLowAdditional .eq. 1) then
         ! Reading 2nd lateral flow data starts
-        allocate(noLatFlow2(nlinks))
-        read(1,*) (noLatFlow2(i), i=1, nlinks)
+    !    allocate(noLatFlow2(nlinks))
+    !    read(1,*) (noLatFlow2(i), i=1, nlinks)
 
-        allocate(latFlowLocations2(maxval(noLatFlow2),nlinks))   ! all the first nodes where a lateral flow starts
-        allocate(latFlowType2(maxval(noLatFlow2),nlinks))        ! Lateral flow type: Type = 1 = time series; Type 2 = flow as a function of upstream flow
-        allocate(latFlowXsecs2(maxval(noLatFlow2),nlinks))       ! no of x-secs at the downstream that the lateral flow is applied
+    !    allocate(latFlowLocations2(maxval(noLatFlow2),nlinks))   ! all the first nodes where a lateral flow starts
+    !    allocate(latFlowType2(maxval(noLatFlow2),nlinks))        ! Lateral flow type: Type = 1 = time series; Type 2 = flow as a function of upstream flow
+    !    allocate(latFlowXsecs2(maxval(noLatFlow2),nlinks))       ! no of x-secs at the downstream that the lateral flow is applied
 
-        do j = 1,nlinks
-            ncomp=nx1(j)
-            if (noLatFlow2(j) .gt. 0) then
-                read(1,*) (latFlowLocations2(i,j), i=1, noLatFlow2(j))
-            else
-                read(1,*)
-            end if
-        end do
-        do j = 1,nlinks
-            ncomp=nx1(j)
-            if (noLatFlow2(j) .gt. 0) then
-                read(1,*) (latFlowType2(i,j), i=1, noLatFlow2(j))
-                do i=1,noLatFlow2(j)
-                    if (latFlowType2(i,j) .eq. 1) then
-                        print*, 'Lateral flow at node = ', latFlowLocations2(i,j), ', is a time series at reach ', j
-                    elseif (latFlowType2(i,j) .eq. 2) then
-                        print*, 'Lateral flow at node = ', latFlowLocations2(i,j), ', is a function of upstream flow at reach ', j
-                    else
-                        print*, 'Wrong lateral flow type is provided. Type ', latFlowType2(i,j), 'is not a valid type at reach ', j
-                        stop
-                    end if
-                end do
-            else
-                read(1,*)
-            end if
-        end do
+    !    do j = 1,nlinks
+    !        ncomp=nx1(j)
+    !        if (noLatFlow2(j) .gt. 0) then
+    !            read(1,*) (latFlowLocations2(i,j), i=1, noLatFlow2(j))
+    !        else
+    !            read(1,*)
+    !        end if
+    !    end do
+    !    do j = 1,nlinks
+    !        ncomp=nx1(j)
+    !        if (noLatFlow2(j) .gt. 0) then
+    !            read(1,*) (latFlowType2(i,j), i=1, noLatFlow2(j))
+    !            do i=1,noLatFlow2(j)
+    !                if (latFlowType2(i,j) .eq. 1) then
+    !                    print*, 'Lateral flow at node = ', latFlowLocations2(i,j), ', is a time series at reach ', j
+    !                elseif (latFlowType2(i,j) .eq. 2) then
+    !                    print*, 'Lateral flow at node = ', latFlowLocations2(i,j), ', is a function of upstream flow at reach ', j
+    !                else
+    !                    print*, 'Wrong lateral flow type is provided. Type ', latFlowType2(i,j), 'is not a valid type at reach ', j
+    !                    stop
+    !                end if
+    !            end do
+    !        else
+    !            read(1,*)
+    !        end if
+    !    end do!
 
-        do j = 1,nlinks
-            ncomp = nx1(j)
-            if (noLatFlow2(j) .gt. 0) then
-                read(1,*) (latFlowXsecs2(i,j), i=1, noLatFlow2(j))
-            else
-                read(1,*)
-            end if
-        end do
-    endif
+    !    do j = 1,nlinks
+    !        ncomp = nx1(j)
+    !        if (noLatFlow2(j) .gt. 0) then
+    !            read(1,*) (latFlowXsecs2(i,j), i=1, noLatFlow2(j))
+    !        else
+    !            read(1,*)
+    !        end if
+    !    end do
+    !endif
     ! Reading 2nd lateral flow data ends
     !pause
     ! Reading Q-SK table data data starts
@@ -392,8 +355,6 @@ program mesh
 
     read(1,*) applyNaturalSection  ! if 1, then attribute table will be activated, if 0, then rectangular channel will be applied
 !print*, ndep_path; pause
-    read(1,*) minDiffuLm
-    read(1,*) maxDiffuLm
     close (1)       ! all input data read is finished
 
     ! Allocate arrays
@@ -403,7 +364,6 @@ program mesh
 
     dt = dtini
     minDx = 1e6
-    maxDx = 0.0
 
     do j = 1,nlinks
         ncomp = nx1(j)
@@ -415,13 +375,12 @@ program mesh
             !print*, j, dx(1:ncomp-1,j)
 
             if (minval(dx(1:ncomp-1,j)) .le. minDx) minDx=minval(dx(1:ncomp-1,j))
-            if (maxval(dx(1:ncomp-1,j)) .ge. maxDx) maxDx=maxval(dx(1:ncomp-1,j))
         close(90)
         print*, j, 'dx', dx(1:ncomp-1,j)
         !pause
     end do
 
-  ! reading Strickler's coefficient at each section
+    ! reading Strickler's coefficient at each section
   !  do j = 1,nlinks
   !      ncomp = nx1(j)
   !      open(unit=85,file=trim(manning_strickler_path(j)), status='unknown') !! //'Mannings_Stricklers_coeff.txt', status='unknown')
@@ -476,7 +435,6 @@ program mesh
 
             do i=1,ncomp
                 read(85, *) x, skLeft(i,j), skMain(i,j), skRight(i,j)
-
                 !print*, x, skLeft(i,j), skMain(i,j), skRight(i,j)
                 !print*, i,(1.0/skLeft(i,j)),(1.0/skMain(i,j)),(1.0/skRight(i,j)),leftBank(i,j), rightBank(i,j),timesDepth,j
                 call readXsection(i,(1.0/skLeft(i,j)),(1.0/skMain(i,j)),(1.0/skRight(i,j)),&
@@ -510,19 +468,6 @@ program mesh
     !print*, oldY
     !pause
 
-    !! applying constant width for all the river reaches
-  !  bo(1:nx1(1),1) = 100.
-  !  bo(1:nx1(2),2) = 100.
-  !  bo(1:nx1(3),3) = 300.
-  !  bo(1:nx1(4),4) = 300.
-  !  bo(1:nx1(5),5) = 500.
-  !  bo(:,1) = 100.
-  !  bo(:,2) = 100.
-  !  bo(:,3) = 300.
-  !  bo(:,4) = 300.
-  !  bo(:,5) = 500.
-    !bo = 400.
-
     !do j=1,nlinks
     !    ncomp = nx1(j)
     !    print*, j, (z(i,j),i=1,ncomp)
@@ -531,20 +476,20 @@ program mesh
 
     ! creating I2 table for each section
 
-    if (applyNaturalSection .ne. 0) then
-        do j = 1,nlinks
-            ncomp = nx1(j)
-            do i=1,ncomp
-                call create_I2(i,ncomp,j)
-            end do
-        end do
-    end if
+    !if (applyNaturalSection .ne. 0) then
+    !    do j = 1,nlinks
+    !        ncomp = nx1(j)
+    !        do i=1,ncomp
+ !  !             call create_I2(i,ncomp,j)
+    !        end do
+    !    end do
+    !end if
 
     NAnum = -100
     ityp = 1
 
     ! setting initial condition
-    ! setting initial condition from previous work
+    ! setting initial condition from previous model results
     !open(unit=91,file=trim(output_path)//'initialCondition.txt', status='unknown')
     ! read(91, *)
     !do i=1,ncomp
@@ -706,9 +651,8 @@ program mesh
     do j = 1,nlinks
         ncomp = nx1(j)
         do i=1,ncomp
-            oldY(i,j) = max(oldY(i,j),oldY(nx1(nlinks),nlinks))     ! corrected 20210524
+            if (oldY(i,j) .lt. oldY(ncomp,nlinks)) oldY(i,j) = oldY(ncomp,nlinks)
         end do
-        print*, j, (oldY(i,j),i=1,ncomp)
     end do
 
 
@@ -786,8 +730,6 @@ program mesh
 
 
     ! Open files for output
-    print*, output_path
-    pause 1000
     path = trim(output_path) // 'output_wl.txt'
     open(unit=8, file=trim(path), status='unknown')
 
@@ -836,7 +778,7 @@ program mesh
     path = trim(output_path) // 'routingNotChanged.txt'
     open(unit=99, file=trim(path), status='unknown')
 
-    path = trim(output_path) // 'depth.txt'
+    path = trim(output_path) // 'volRemain.txt'
     open(unit=991, file=trim(path), status='unknown')
 
     path = trim(output_path) // 'courant.txt'
@@ -860,8 +802,8 @@ program mesh
     path = trim(output_path) // 'lateral.txt'
     open(unit=999, file=trim(path), status='unknown')
 
-    !path = trim(output_path) // 'normalElevation.txt'
-    !open(unit=881, file=trim(path), status='unknown')
+    path = trim(output_path) // 'normalElevation.txt'
+    open(unit=881, file=trim(path), status='unknown')
 
     path = trim(output_path) // 'velocity.txt'
     open(unit=882, file=trim(path), status='unknown')
@@ -889,14 +831,11 @@ program mesh
     currentRoutingNormal = 0
     routingNotChanged = 0
 
-    minDt = 100000.0
-    maxDt = 0.0
-
         ! Output initial conditions
     do j=1, nlinks
         ncomp = nx1(j)
 
-        write(8, 10)  t, j, (oldY(i,j), i=1,maxval(nx1))
+        write(8, 10)  t, j, (oldY(i,j)-z(i,j), i=1,maxval(nx1))
         write(9, 10)  t, j, (oldQ(i,j), i=1, maxval(nx1))
         write(51, 10) t, j, (oldArea(i,j), i=1, maxval(nx1))
         write(882, 10) t, j, (oldQ(i,j)/oldArea(i,j), i=1, maxval(nx1))
@@ -911,7 +850,7 @@ program mesh
         write(97, *) t, j, currentROutingDiffusive(j)
         write(98, *) t, j, (currentRoutingNormal(i,j), i=1, maxval(nx1)-1)
         write(99, *) t, j, (routingNotChanged(i,j), i=1, maxval(nx1)-1)
-        write(991, 10) t, j, (oldY(i,j)-z(i,j), i=1,maxval(nx1))
+        write(991, *) t, j, (volRemain(i,j), i=1, maxval(nx1)-1)
         write(992, *) t, j, (courant(i), i=1, maxval(nx1)-1)
         write(9921, *) t, j, (courant(i), i=1, maxval(nx1))
 
@@ -952,7 +891,6 @@ program mesh
         ncomp = nx1(j)
 
         !+++-- Checking the dtini for possible diffusive wave model and applying it to the model.
-        !print*, t0, t,saveInterval, cfl, tfin, maxCelDx,dtini_given; pause 1001
         if (j .eq. 1) call calculateDT(t0, t,saveInterval, cfl, tfin, maxCelDx,dtini_given)
         !dtini = dtini_given
 
@@ -1262,8 +1200,6 @@ program mesh
         !! Forcing all computation to diffusive routing
         higherLimitCount = ncomp; lowerLimitCount = ncomp
 
-        !! Forcing all computation to dynamic routing
-        !higherLimitCount = 0; lowerLimitCount = ncomp
 
         !print*, j, higherLimitCount(j), lowerLimitCount(j),currentROutingDiffusive(j), notSwitchRouting(j), minNotSwitchRouting
         !pause
@@ -1307,8 +1243,6 @@ program mesh
 !print*, 'ce',(celerity(i,2), i=1,ncomp)
 !pause
      !!+++++++ corrector starts +++++++++++++
-
-
 
     do j =  nlinks,1,-1
 
@@ -1370,7 +1304,7 @@ program mesh
                 dap(ncomp,j)=newArea(ncomp,j) - oldArea(ncomp,j)    !update from downstream time series
                 dac(ncomp,j)=dap(ncomp,j)
                 dqc(ncomp,j)=dqp(ncomp,j)
-                !print*, j,i,areap(ncomp,j),dap(ncomp,j),dac(ncomp,j),newArea(ncomp,j),oldArea(ncomp,j)
+                !print*, j,i,areap(i,j),dap(ncomp,j),dac(ncomp,j),newArea(ncomp,j),oldArea(ncomp,j)
                 !pause 1010
             end if
 
@@ -1425,13 +1359,12 @@ program mesh
 
         if ( (mod( (t+dtini/60.-t0*60.)*60.  ,saveInterval) .le. TOLERANCE) .or. ( t+dtini/60. .eq. tfin *60. ) ) then
             !write(96, *) t+dtini/60.,j, (diffusivity2(kkk), kkk=1, nx1(j))
-        !if (j .eq. 1) then
-        !do i=1,nlinks
-            !write(95, 10) t+dtini/60.,i, (celerity(kkk,i), kkk=1, maxval(nx1))
-            write(95, 10) t+dtini/60.,j, (celerity2(kkk), kkk=1, nx1(j))
-            write(96, 10) t+dtini/60.,j, (diffusivity(kkk,j), kkk=1, maxval(nx1))
-        !end do
-        !end if
+        if (j .eq. 1) then
+        do i=1,nlinks
+            write(95, 10) t+dtini/60.,i, (celerity(kkk,i), kkk=1, nx1(i))
+            write(96, 10) t+dtini/60.,i, (diffusivity(kkk,i), kkk=1, nx1(i))
+        end do
+        end if
         end if
 
 
@@ -1529,8 +1462,7 @@ program mesh
 
 
     !print*, 'times',mod( (t-t0*60.)*60.  ,saveInterval), t, t0, dtini, (currentROutingDiffusive(j),j=1,nlinks)
-    print "(A, f8.3, A, f9.2, A, f9.5, A, f9.5)", 'Parcent completed:', (t-t0*60.)/(tfin*60.-t0*60.)*100, '&
-    %, t=',(t-t0*60.),' dt=', dtini, &
+    print "(A, f8.3, A, f9.5, A, f9.5)", 'Parcent completed:', (t-t0*60.)/(tfin*60.-t0*60.)*100, '%, dt=', dtini, &
     'sec, max Celerity = ', maxCelerity
     !if ( (mod( (t-t0*60.)*60.  ,saveInterval) .le. TOLERANCE) .or. ( t .eq. tfin *60. )  &
     !    .or. (mod(timestep,saveFrequency) .eq. 0) ) then
@@ -1543,10 +1475,10 @@ program mesh
         write(8, 10) t,j, (newY(i,j), i=1,maxval(nx1))
         !write(8, 10) t,j, (newY(i,j)-z(i,j), i=1,maxval(nx1))
         write(9, 10) t,j, (newQ(i,j), i=1,maxval(nx1))
-        !write(51, 10) t,j, (newY(i,j)-z(i,j), i=1,maxval(nx1))
+        write(51, 10) t,j, (newY(i,j)-z(i,j), i=1,maxval(nx1))
         !write(51, 10) t,j, (newY(i,j)-z(i,j), i=1,nx1(j)),(newY(i,j), i=nx1(j)+1,maxval(nx1))
         !print*, t,j, (newY(i,j)-z(i,j), i=1,nx1(j)),(newY(i,j), i=nx1(j)+1,maxval(nx1))
-        write(51, 10) t,j, (newArea(i,j), i=1, maxval(nx1))
+        !write(51, 10) t,j, (newArea(i,j), i=1, maxval(nx1))
         write(882, 10) t,j, (newQ(i,j)/newArea(i,j), i=1, maxval(nx1))
 
         !write(881, 10) t,j, (normalDepthAtNodes(i,j), i=1, maxval(nx1))
@@ -1554,8 +1486,8 @@ program mesh
         write(91, 10) t,j, (bo(i,j), i=1, maxval(nx1))
         write(93, 10) t,j, (pere(i,j), i=1, maxval(nx1))
 
-        !write(97, 11) t,j, currentROutingDiffusive(j), notSwitchRouting(j)
-        write(991, 10) t,j, (newY(i,j)-z(i,j), i=1,maxval(nx1))
+        write(97, 11) t,j, currentROutingDiffusive(j), notSwitchRouting(j)
+        write(991, 10) t, j, (volRemain(i,j), i=1, maxval(nx1)-1)
     end do
 
     end if
@@ -1636,14 +1568,11 @@ program mesh
 !10  format(f12.3, i6, <maxval(nx1)>f13.6)
 !11  format(f12.3, i6, <maxval(nx1)>i6)
 
-10  format(f12.5 ,i6, 2200f14.4)
+10  format(f12.5 ,i6, 2200f14.5)
 11  format(f12.5 ,i6, 2200i6)
 
     call cpu_time( t2 )
     print '("Total CPU Time = ",f10.3," seconds.")',t2 - t1
-
-    print*, 'maxDt=', maxDt, 'minDt=', minDt
-    print*, 'maxDx=', maxDx, 'minDx=', minDx
     !print "(A, f10.3, A)", 'Total CPU Time = ', t2 - t1, ' seconds.'
     !pause 202
 end program mesh

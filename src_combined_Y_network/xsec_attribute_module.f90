@@ -15,7 +15,7 @@ module xsec_attribute_module
         ! Input
         integer, intent(in) :: elements, num_points, num_reaches
 
-        allocate(xsec_tab(11, elements, num_points, num_reaches))
+        allocate(xsec_tab(12, elements, num_points, num_reaches))
 
 
         ! Headers:

@@ -50,8 +50,9 @@ subroutine section(j)
             skkkTable = xsec_tab(11,:,i,j)
             currentSquareDepth=(elevTable-z(i,j))**2
             currentCubicDepth =(elevTable-z(i,j))**3
-            I2Tablep = xsec_tab(9,:,i,j)
-            I2Tablec = xsec_tab(10,:,i,j)
+            I2Tablep = xsec_tab(10,:,i,j)
+            I2Tablec = xsec_tab(12,:,i,j)
+
 
         !     interpolate the cross section attributes based on water elevation
             xt=oldY(i,j)
