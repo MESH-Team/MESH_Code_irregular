@@ -787,7 +787,6 @@ program mesh
 
     ! Open files for output
     print*, output_path
-    pause 1000
     path = trim(output_path) // 'output_wl.txt'
     open(unit=8, file=trim(path), status='unknown')
 
