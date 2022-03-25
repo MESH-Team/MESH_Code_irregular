@@ -48,75 +48,22 @@ program mesh
 
     call cpu_time( t1 )
 
-    !open(unit=1,file="../lower_Mississippi/input/input_BR_2_BC_2009.txt",status='unknown')
-    !open(unit=1,file="../lower_Mississippi/input/input_BR_2_BC_2009.txt",status='unknown')
-    !open(unit=1,file="../lateralFlow_test/input/input_dynamic_lateralFlow.txt",status='unknown')
     !open(unit=1,file="../Mississippi_River_11_years_20200511/input/input_Mississippi_BR2SWP_dynamic_new.txt",status='unknown')
     !open(unit=1,file="../Vermelion_River/input/input_Vermelion_dynamic_20200526.txt",status='unknown')
-    !open(unit=1,file="../../../MESH_code/4-A-1_US_2bound/input_naturalChannel_tidal.txt",status='unknown')
-    !open(unit=1,file="../Rectangular_Y_Channel/input/input_naturalChannel_exact.txt",status='unknown')
+
+
     !open(unit=1,file="../Rectangular_Y_Channel/input/test.txt",status='unknown')
-    !open(unit=1,file="../Rectangular_Y_Channel/input/input_naturalChannel_tidal.txt",status='unknown')
     !open(unit=1,file="../NHD_Y_Channel/input/input_naturalChannel_exact.txt",status='unknown')
-    !open(unit=1,file="../Multijunction_Network/input/input_multiJunction.txt",status='unknown')
-    !open(unit=1,file="../Multijunction_Network/input/input_multiJunction_NHD.txt",status='unknown')
-    !open(unit=1,file="../Multijunction_Network/input/input_multiJunction_NHD_mixedRouting.txt",status='unknown')
-    !open(unit=1,file="../Multijunction_Network/input/input_multiJunction_NHD_mixedRouting_8channel.txt",status='unknown')
-    !open(unit=1,file="../Multijunction_Network/input/input_multiJunction_NHD_mixedRouting_11channel.txt",status='unknown')
-    !open(unit=1,file="../Multijunction_Network/input/input_multiJunction_NHD_mixedRouting_16channel.txt",status='unknown')
-    !open(unit=1,file="../Multijunction_Network/Large_NHD_Geometry/input_NHD_mixedRouting_29channel.txt",status='unknown')
-    !open(unit=1,file="../Synthetic_Network_Test/input",status='unknown')
+
     !open(unit=1,file="../Rectangular_Y_Channel/input/input_naturalChannel_exact.txt",status='unknown')
-    !open(unit=1,file="../Multijunction_Network/Large_NHD_Geometry_temp/input_NHD_mixedRouting_29channel_temp.txt",status='unknown')
     !open(unit=1,file="../NHD_Y_Channel/input/input_naturalChannel_exact_20201012.txt",status='unknown')
     !open(unit=1,file="../NHD_Y_Channel/input/input_naturalChannel_test.txt",status='unknown')
-    !open(unit=1,file="../lateralFlow_test/input/input_crank_nicolson_test_lateralFlow.txt",status='unknown')
+
     !open(unit=1,file="../NHD_Y_Channel/input/input_naturalChannel_test_1chn.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\Florence_NC\Model\Geometry\input_file_737",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\Florence_NC\Model\Geometry\input_file_737_650_changed_temp.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\Florence_NC\Model\Geometry\input_file_737_650_changed",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\input_ARBNM.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\input_ARBNM_added_LatFlow_from_structure.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\input_ARBNM_added_LatFlow_from_structure_one_channel.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\input_ARBNM_added_LatFlow_from_structure_&
-    !    one_channel_intrpl.txt",status='unknown')
-    !open(unit=1,file="D:\One_Drive_Tulane\OneDrive - Tulane University\Kyle_edit_notWorking\Mesh_F_Kyle\Rectangular_Y_Channel\input\input_naturalChannel_tidal_2.txt",status='unknown')
+    !open(unit=1,file="D:\Project_Works\JTTI\Florence_NC\Model\Geometry\input_file_737",status='unknown')')
     !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\input_ARBNM_added_&
     !LatFlow_from_structure_interpol_shrt.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\input_ARBNM_chn5_shrt.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\X-sec\RectangularCS\input_rectangular.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\X-sec\RectangularCS\input_rectangular3.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\X-sec\RectangularCS\input_rectangular1.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\X-sec\RectangularCS\input_rectangular1_5.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\X-sec\RectangularCS\input_rectangular1_3.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\X-sec\RectangularCS\input_rectangular1_4.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\X-sec\RectangularCS\input_rectangular1_2.txt",status='unknown')
-    !open(unit=1,file="D:\One_Drive_Tulane\OneDrive - Tulane University\Kyle_edit_notWorking\Mesh_F_Kyle\&
-    !Mississippi_River_11_years_20200511\input\input_Mississippi_BR2SWP_dynamic_new_run_20210123.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\X-sec\RectangularCS\CS_rectangular\input_rectangular.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\input_ARBNM_added_&
-    !LatFlow_from_structure_interpol_diffu.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\input_dynamic_5_50m.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\input_dynamic_4_50m.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\X-sec\RectangularCS\&
-    !CS_rectangular3\input_rectangular.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\input_ARBNM_added_&
-    !LatFlow_from_structure_interpol_diffu_latQ_as_bound.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\input_ARBNM_added_LatFlow_from_structure_&
-    !interpol_dyna_allRectang_test3.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\X-sec\RectangularCS\J_3_5\input_chn_3_5.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\X-sec\&
-    !RectangularCS\J_3_5\input_chn_3_5_netwrk.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\X-sec\RectangularCS\J_3_5\input_chn_3_5_analy.txt",status='unknown')
-    !Open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\X-sec\RectangularCS\Test_20210310\input.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\input_ARBNM_added_LatFlow_&
-    !from_structure_Right_channel_intrpl.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\&
-    !input_ARBNM_added_LatFlow_from_structure_interpol_diffu.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\input_remapDx_dyna_allRectang_varWidth.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\routeLink_model\input_file_1",status='unknown')
-
-
+        !open(unit=1,file="D:\One_Drive_Tulane\OneDrive - Tulane University\Kyle_edit_notWorking\Mesh_F_Kyle\&
     !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\input_ARBNM_latQ_as_bound_3zones.txt",status='unknown')    ! surveyed section run
     !open(unit=1,file="D:\Project_Works\JTTI\ARBNM\Model\routeLink_model\&
     !    Geometry_RouteLink_1_2_3_4_5\input_orig.txt",status='unknown')    ! original NHD section run
@@ -124,20 +71,7 @@ program mesh
 
     !open(unit=1,file="D:\Project_Works\JTTI\Florence_NC\Model\input_file_737_final_interpolatedSections",status='unknown')     ! Florence final, interpolated cross sections
     !open(unit=1,file="D:\Project_Works\JTTI\Florence_NC\Model\input_file_737_final_nonInterpolatedSections",status='unknown')     ! Florence two node chn, non-interpolated cross sections
-    !open(unit=1,file="D:\Project_Works\JTTI\Florence_NC\Model\input_file_737_final_interpolatedSectionsTest",status='unknown')      ! Florence Test case for diffu, celerity, roughness
     open(unit=1,file="D:\Project_Works\JTTI\Florence_NC\Model\Test_interpolatedSection_2n\input_file_737",status='unknown')      ! Florence Test case for checking the number of interpolated sections
-    !open(unit=1,file="D:\Project_Works\JTTI\Florence_NC\Model\Test_interpolatedSection_4n\input_file_737",status='unknown')      ! Florence Test case for checking the number of interpolated sections
-    !open(unit=1,file="D:\Project_Works\JTTI\Florence_NC\Model\Test_interpolatedSection_5n\input_file_737",status='unknown')      ! Florence Test case for checking the number of interpolated sections
-    !open(unit=1,file="D:\Project_Works\JTTI\Florence_NC\Model\input_file_738_dummy",status='unknown')
-
-    !open(unit=1,file="D:\Project_Works\JTTI\codeTest_rectangle\input.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\codeTest_rectangle\input_Y_chn.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\codeTest_rectangle\input_multi_chn_flrnc.txt",status='unknown')
-    !open(unit=1,file="D:\Project_Works\JTTI\codeTest_rectangle\Florence_singleLine_ntwrk_test2\&
-    !input_multi_chn_flrnc2.txt",status='unknown')
-
-
-    !(unit=1,file="D:\Project_Works\JTTI\codeTest_rectangle\input.txt",status='unknown')
 
     open(unit=1,file="D:\Project_Works\JTTI\Goodwin_Creek_Experimental_Watershed\Devided_reaches\&
     input_file_added_reaches1982.txt",status='unknown')
